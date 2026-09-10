@@ -17,6 +17,10 @@ logs
 .DS_Store
 .fleet
 .idea
+.vscode
+.claude
+.agents
+skills-lock.json
 
 # Local env files
 .env
