@@ -6,6 +6,9 @@
 .cache
 dist
 
+# Prisma Composer deploy artifacts
+.prisma-composer
+
 # Node dependencies
 node_modules
 
@@ -17,6 +20,11 @@ logs
 .DS_Store
 .fleet
 .idea
+.vscode
+.claude
+.agents
+skills-lock.json
+coverage
 
 # Local env files
 .env

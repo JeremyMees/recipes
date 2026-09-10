@@ -7,21 +7,42 @@
     "dev": "nuxt dev",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
+    "prepare": "husky",
     "lint": "eslint .",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "format": "prettier . --check",
+    "format:fix": "prettier . --write",
+    "deps": "npx taze -w"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.129",
     "@iconify-json/simple-icons": "^1.2.94",
     "@nuxt/ui": "^4.11.0",
+    "@vitejs/plugin-vue": "^6.0.8",
     "nuxt": "^4.5.2",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "@golar/vue": "^0.1.10",
     "@nuxt/eslint": "^1.17.0",
+    "@nuxt/test-utils": "^4.3.2",
+    "@prisma/composer": "^0.17.0",
+    "@prisma/composer-prisma-cloud": "^0.17.0",
+    "@vitest/coverage-v8": "5.0.0",
+    "@vue/test-utils": "^2.5.0",
     "eslint": "^10.10.0",
+    "golar": "^0.1.10",
+    "happy-dom": "^20.14.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.0",
+    "magic-string": "^1.2.3",
+    "prettier": "^3.9.6",
     "typescript": "^6.0.3",
-    "vue-tsc": "^3.3.11"
+    "unimport": "^7.0.1",
+    "vite": "8.2.2",
+    "vitest": "^5.0.0"
   },
   "packageManager": "pnpm@12.3.4"
 }

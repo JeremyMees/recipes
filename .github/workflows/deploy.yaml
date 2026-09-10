@@ -1,0 +1,29 @@
+name: Production deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate
+    uses: ./.github/workflows/validate.yaml
+
+  deploy:
+    name: Deploying
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Build
+        run: pnpm run build
+      - name: Deploy to Prisma Compute
+        run: pnpm dlx prisma@latest deploy compute/module.ts
+        env:
+          PRISMA_SERVICE_TOKEN: ${{ secrets.PRISMA_SERVICE_TOKEN }}
+          PRISMA_WORKSPACE_ID: ${{ secrets.PRISMA_WORKSPACE_ID }}
