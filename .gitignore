@@ -6,6 +6,9 @@
 .cache
 dist
 
+# Prisma Composer deploy artifacts
+.prisma-composer
+
 # Node dependencies
 node_modules
 
