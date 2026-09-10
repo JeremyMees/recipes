@@ -15,7 +15,8 @@ Use this template to get started with [Nuxt UI](https://ui.nuxt.com) quickly.
   </picture>
 </a>
 
-> The starter template for Vue is on https://github.com/nuxt-ui-templates/starter-vue.
+> The starter template for Vue is on
+> https://github.com/nuxt-ui-templates/starter-vue.
 
 ## Quick Start
 
@@ -57,8 +58,12 @@ Locally preview production build:
 pnpm preview
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+Check out the
+[deployment documentation](https://nuxt.com/docs/getting-started/deployment) for
+more information.
 
 ## Renovate integration
 
-Install [Renovate GitHub app](https://github.com/apps/renovate/installations/select_target) on your repository and you are good to go.
+Install
+[Renovate GitHub app](https://github.com/apps/renovate/installations/select_target)
+on your repository and you are good to go.
