@@ -23,7 +23,7 @@ jobs:
       - name: Build
         run: pnpm run build
       - name: Deploy to Prisma Compute
-        run: pnpm dlx prisma@latest deploy compute/module.ts
+        run: pnpm exec prisma-composer deploy compute/module.ts --no-interactive
         env:
           PRISMA_SERVICE_TOKEN: ${{ secrets.PRISMA_SERVICE_TOKEN }}
           PRISMA_WORKSPACE_ID: ${{ secrets.PRISMA_WORKSPACE_ID }}
