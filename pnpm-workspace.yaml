@@ -2,7 +2,5 @@ allowBuilds:
   '@parcel/watcher': false
   '@tailwindcss/oxide': false
   esbuild: false
-  msgpackr-extract: false
   unrs-resolver: false
   vue-demi: false
-  workerd: false
