@@ -21,6 +21,7 @@ logs
 .claude
 .agents
 skills-lock.json
+coverage
 
 # Local env files
 .env
