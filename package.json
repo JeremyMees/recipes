@@ -21,11 +21,12 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "@golar/vue": "^0.1.10",
     "@nuxt/eslint": "^1.17.0",
     "eslint": "^10.10.0",
-    "typescript": "^6.0.3",
-    "vue-tsc": "^3.3.11",
-    "prettier": "^3.9.6"
+    "golar": "^0.1.10",
+    "prettier": "^3.9.6",
+    "typescript": "^6.0.3"
   },
   "packageManager": "pnpm@12.3.4"
 }
