@@ -38,6 +38,7 @@ export function useRecipesQuery(
         { query: toValue(query) },
       ),
     placeholderData: previous => previous,
+    refetchOnMount: 'always',
   })
 
   prefetchOnServer(result)
