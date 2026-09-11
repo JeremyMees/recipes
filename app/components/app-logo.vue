@@ -2,9 +2,8 @@
   <div class="flex items-center gap-1.5">
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="1em"
-      height="1em"
       viewBox="0 0 128 128"
+      class="size-6"
     >
       <path d="M0 0h128v128H0z" fill="none" />
       <path
