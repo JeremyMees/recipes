@@ -2,14 +2,6 @@
 const route = useRoute()
 const id = computed(() => String(route.params.id))
 
-function goBack() {
-  if (window.history.state?.back) {
-    window.history.back()
-  } else {
-    navigateTo('/')
-  }
-}
-
 const { data: recipe, isPending, error } = useRecipeQuery(id)
 const { isSupported: isWakeLockSupported, request: requestWakeLock } =
   useWakeLock()
@@ -78,9 +70,9 @@ useSeoMeta({ title: () => recipe.value?.title ?? 'Recept' })
       label="Terug"
       color="neutral"
       variant="ghost"
+      to="/"
       class="self-start"
       data-test-id="recipe-detail-back"
-      @click="goBack"
     />
 
     <UAlert
@@ -107,7 +99,7 @@ useSeoMeta({ title: () => recipe.value?.title ?? 'Recept' })
         sizes="100vw lg:1200px"
         preload
         data-test-id="recipe-detail-image"
-        class="aspect-video w-full rounded-lg object-cover"
+        class="aspect-video max-h-96 w-full rounded-lg object-cover"
       />
 
       <div class="flex flex-wrap items-start justify-between gap-4">

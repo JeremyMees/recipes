@@ -10,15 +10,13 @@ import { detail } from '~~/test/fixtures/recipes'
 import { testId } from '~~/test/unit/stubs/selectors'
 import type { RecipeDetail } from '#shared/types/recipe'
 
-const { useRouteMock, wakeLock, navigateToMock } = vi.hoisted(() => ({
+const { useRouteMock, wakeLock } = vi.hoisted(() => ({
   useRouteMock: vi.fn(() => ({ params: { id: 'r1' } })),
   wakeLock: { isSupported: { value: true }, request: vi.fn() },
-  navigateToMock: vi.fn(),
 }))
 
 mockNuxtImport('useRoute', () => useRouteMock)
 mockNuxtImport('useWakeLock', () => () => wakeLock)
-mockNuxtImport('navigateTo', () => navigateToMock)
 
 let response: RecipeDetail | undefined
 let status: number
@@ -36,7 +34,6 @@ beforeEach(() => {
   response = detail()
   status = 200
   wakeLock.request.mockClear()
-  navigateToMock.mockClear()
 })
 
 function mountPage() {
@@ -190,34 +187,12 @@ describe('recipe detail page', () => {
     )
   })
 
-  it('goes back in history when there is a previous page', async () => {
-    window.history.replaceState({ back: '/' }, '')
-    const historyBack = vi
-      .spyOn(window.history, 'back')
-      .mockImplementation(() => {})
-
+  it('links the back button to the recipe list', async () => {
     const component = await mountLoaded()
-    await component.get(testId('recipe-detail-back')).trigger('click')
 
-    expect(historyBack).toHaveBeenCalled()
-    expect(navigateToMock).not.toHaveBeenCalled()
-
-    historyBack.mockRestore()
-  })
-
-  it('goes to the recipe list when there is no previous page', async () => {
-    window.history.replaceState({}, '')
-    const historyBack = vi
-      .spyOn(window.history, 'back')
-      .mockImplementation(() => {})
-
-    const component = await mountLoaded()
-    await component.get(testId('recipe-detail-back')).trigger('click')
-
-    expect(navigateToMock).toHaveBeenCalledWith('/')
-    expect(historyBack).not.toHaveBeenCalled()
-
-    historyBack.mockRestore()
+    expect(component.get(testId('recipe-detail-back')).attributes('href')).toBe(
+      '/',
+    )
   })
 
   it('explains when the recipe cannot be loaded', async () => {
