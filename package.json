@@ -26,6 +26,7 @@
     "@neondatabase/serverless": "^1.1.0",
     "@nuxt/image": "2.1.0",
     "@nuxt/ui": "^4.11.0",
+    "@sentry/nuxt": "^10.74.0",
     "@tanstack/vue-query": "^5.102.8",
     "@vite-pwa/nuxt": "1.1.1",
     "@vitejs/plugin-vue": "^6.0.8",

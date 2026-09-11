@@ -15,6 +15,7 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     '@nuxt/image',
     '@vite-pwa/nuxt',
+    '@sentry/nuxt/module',
   ],
 
   devtools: {
@@ -30,6 +31,9 @@ export default defineNuxtConfig({
     session: {
       password: process.env.NUXT_SESSION_PASSWORD ?? '',
       maxAge: 60 * 60 * 24 * 30,
+    },
+    public: {
+      sentryDsn: process.env.SENTRY_DSN ?? '',
     },
   },
 
@@ -63,5 +67,10 @@ export default defineNuxtConfig({
         },
       ],
     },
+  },
+
+  sourcemap: {
+    client: 'hidden',
+    server: false,
   },
 })
