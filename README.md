@@ -1,69 +1,89 @@
-# Nuxt Starter Template
+# Familierecepten
 
-[![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
+A private cookbook for the family. Paste a link from a recipe site, the recipe
+is parsed and saved in our own layout. Everyone manages their own recipes and
+can browse what the rest of the family has saved.
 
-Use this template to get started with [Nuxt UI](https://ui.nuxt.com) quickly.
+## Stack
 
-- [Live demo](https://starter-template.nuxt.dev/)
-- [Documentation](https://ui.nuxt.com/docs/getting-started/installation/nuxt)
-
-<a href="https://starter-template.nuxt.dev/" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png">
-    <img alt="Nuxt Starter Template" src="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png" width="830" height="466">
-  </picture>
-</a>
-
-> The starter template for Vue is on
-> https://github.com/nuxt-ui-templates/starter-vue.
-
-## Quick Start
-
-```bash [Terminal]
-npm create nuxt@latest -- -t ui
-```
-
-## Deploy your own
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-name=starter&repository-url=https%3A%2F%2Fgithub.com%2Fnuxt-ui-templates%2Fstarter&demo-image=https%3A%2F%2Fui.nuxt.com%2Fassets%2Ftemplates%2Fnuxt%2Fstarter-dark.png&demo-url=https%3A%2F%2Fstarter-template.nuxt.dev%2F&demo-title=Nuxt%20Starter%20Template&demo-description=A%20minimal%20template%20to%20get%20started%20with%20Nuxt%20UI.)
+- Nuxt 4 + Nuxt UI v4
+- Drizzle ORM on Neon Postgres
+- TanStack Query for data fetching
+- nuxt-auth-utils with Google and Facebook login
+- Vitest (unit + component), ESLint, Prettier
 
 ## Setup
 
-Make sure to install the dependencies:
-
 ```bash
 pnpm install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
+cp .env.example .env   # fill in the values, see below
+pnpm db:migrate
 pnpm dev
 ```
 
-## Production
+## Environment variables
 
-Build the application for production:
+| Variable                            | Where it comes from                                                       |
+| ----------------------------------- | ------------------------------------------------------------------------- |
+| `DATABASE_URL`                      | Neon, the **pooled** connection string (with `-pooler`). Used by the app. |
+| `DATABASE_URL_UNPOOLED`             | Neon, the **direct** connection string. Migrations only.                  |
+| `NUXT_SESSION_PASSWORD`             | Any random string of at least 32 characters.                              |
+| `NUXT_FAMILY_EMAILS`                | Comma-separated list of allowed email addresses.                          |
+| `NUXT_OAUTH_GOOGLE_CLIENT_ID`       | Google Cloud Console, OAuth client.                                       |
+| `NUXT_OAUTH_GOOGLE_CLIENT_SECRET`   | Same.                                                                     |
+| `NUXT_OAUTH_FACEBOOK_CLIENT_ID`     | Facebook Developers, App ID.                                              |
+| `NUXT_OAUTH_FACEBOOK_CLIENT_SECRET` | Facebook Developers, App Secret.                                          |
 
-```bash
-pnpm build
-```
+Only addresses listed in `NUXT_FAMILY_EMAILS` can sign in. The list fails
+closed: if it is empty, nobody gets in.
 
-Locally preview production build:
+### Google login
 
-```bash
-pnpm preview
-```
+1. [Google Cloud Console](https://console.cloud.google.com/) → create a project.
+2. **APIs & Services → OAuth consent screen**: type _External_, and add the
+   family members as _Test users_ so the app does not need review.
+3. **APIs & Services → Credentials → Create credentials → OAuth client ID**,
+   type _Web application_.
+4. Under **Authorized redirect URIs** add exactly:
+   - `http://localhost:3000/auth/google`
+   - `https://<your-vercel-domain>/auth/google`
+5. Copy the client ID and secret into `.env`.
 
-Check out the
-[deployment documentation](https://nuxt.com/docs/getting-started/deployment) for
-more information.
+### Facebook login
 
-## Renovate integration
+1. [Facebook Developers](https://developers.facebook.com/apps) → create an app.
+2. Add the **Facebook Login** product.
+3. Under **Valid OAuth Redirect URIs** add:
+   - `http://localhost:3000/auth/facebook`
+   - `https://<your-vercel-domain>/auth/facebook`
+4. Add the family members as _Testers_ — without app review Facebook will not
+   hand over an email address for anyone else.
 
-Install
-[Renovate GitHub app](https://github.com/apps/renovate/installations/select_target)
-on your repository and you are good to go.
+## How importing works
+
+`POST /api/recipes/import` fetches the page and reads schema.org `Recipe`
+JSON-LD, which most recipe sites publish. If that is missing it falls back to
+Open Graph tags for the title and image. Either way it returns a _draft_ that
+you review in the editor before saving, so a site that blocks scraping (some
+return HTTP 402) still gives you a prefilled form instead of an error.
+
+## Scripts
+
+| Script               | What it does                         |
+| -------------------- | ------------------------------------ |
+| `pnpm dev`           | Dev server on http://localhost:3000  |
+| `pnpm build`         | Production build                     |
+| `pnpm test`          | Unit and component tests             |
+| `pnpm test:coverage` | Tests with coverage                  |
+| `pnpm lint`          | ESLint                               |
+| `pnpm typecheck`     | Types                                |
+| `pnpm format:fix`    | Prettier                             |
+| `pnpm db:generate`   | Generate a migration from the schema |
+| `pnpm db:migrate`    | Run migrations                       |
+| `pnpm db:studio`     | Drizzle Studio                       |
+
+## Deploy
+
+Set the same variables on Vercel as in `.env`, add the production domain to the
+redirect URIs in the Google and Facebook consoles, and run `pnpm db:migrate`
+against the production Neon branch.

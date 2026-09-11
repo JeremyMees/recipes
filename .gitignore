@@ -4,6 +4,7 @@
 .nuxt
 .nitro
 .cache
+.vercel
 dist
 
 # Node dependencies
@@ -27,3 +28,4 @@ coverage
 .env
 .env.*
 !.env.example
+.neon
