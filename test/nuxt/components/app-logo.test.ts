@@ -15,6 +15,6 @@ describe('AppLogo', () => {
   it('renders the wordmark next to the mark', async () => {
     const component = await mountSuspended(AppLogo)
 
-    expect(component.text()).toContain('Recipes')
+    expect(component.text()).toContain('Wrap')
   })
 })

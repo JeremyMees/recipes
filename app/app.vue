@@ -36,6 +36,8 @@ useSeoMeta({
 </script>
 
 <template>
+  <NuxtPwaManifest />
+
   <UApp>
     <UHeader>
       <template #left>

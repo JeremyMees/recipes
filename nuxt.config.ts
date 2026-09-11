@@ -1,6 +1,8 @@
 const storageEndpoint = process.env.AWS_ENDPOINT_URL_S3
 
 export default defineNuxtConfig({
+  compatibilityDate: '2026-06-30',
+
   modules: [
     '@nuxt/eslint',
     '@nuxt/ui',
@@ -8,6 +10,7 @@ export default defineNuxtConfig({
     'nuxt-auth-utils',
     '@vueuse/nuxt',
     '@nuxt/image',
+    '@vite-pwa/nuxt',
   ],
 
   devtools: {
@@ -32,5 +35,29 @@ export default defineNuxtConfig({
     domains: storageEndpoint ? [new URL(storageEndpoint).hostname] : [],
   },
 
-  compatibilityDate: '2026-06-30',
+  pwa: {
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'The Wrap',
+      short_name: 'Wrap',
+      description: 'Family recipes app',
+      theme_color: '#ffffff',
+      background_color: '#ffffff',
+      display: 'standalone',
+      icons: [
+        {
+          src: '/android-chrome-192x192.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'maskable',
+        },
+        {
+          src: '/android-chrome-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable',
+        },
+      ],
+    },
+  },
 })

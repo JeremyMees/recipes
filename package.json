@@ -27,6 +27,7 @@
     "@nuxt/image": "2.1.0",
     "@nuxt/ui": "^4.11.0",
     "@tanstack/vue-query": "^5.102.8",
+    "@vite-pwa/nuxt": "1.1.1",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vueuse/nuxt": "14.4.0",
     "drizzle-orm": "^0.45.2",

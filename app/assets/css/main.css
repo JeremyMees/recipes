@@ -3,6 +3,7 @@
 
 @theme {
   --font-sans: 'Manrope', sans-serif;
+  --font-logo: 'Coiny', sans-serif;
 }
 
 @layer base {
