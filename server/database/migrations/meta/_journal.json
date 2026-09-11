@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789040515425,
+      "tag": "0000_heavy_terrax",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789050250639,
+      "tag": "0001_remarkable_gressill",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789050256099,
+      "tag": "0002_lean_songbird",
+      "breakpoints": true
+    }
+  ]
+}
