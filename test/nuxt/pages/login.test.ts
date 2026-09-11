@@ -20,9 +20,9 @@ describe('login page', () => {
     expect(
       component.get(testId('auth-provider-google')).attributes('href'),
     ).toBe('/auth/google')
-    expect(
-      component.get(testId('auth-provider-facebook')).attributes('href'),
-    ).toBe('/auth/facebook')
+    // expect(
+    //   component.get(testId('auth-provider-facebook')).attributes('href'),
+    // ).toBe('/auth/facebook')
     expect(component.find('input').exists()).toBe(false)
   })
 

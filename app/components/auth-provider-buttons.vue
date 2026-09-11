@@ -6,12 +6,12 @@ const providers = [
     icon: 'i-ri-google-fill',
     to: '/auth/google',
   },
-  {
-    id: 'facebook',
-    label: 'Inloggen met Facebook',
-    icon: 'i-ri-facebook-fill',
-    to: '/auth/facebook',
-  },
+  // {
+  //   id: 'facebook',
+  //   label: 'Inloggen met Facebook',
+  //   icon: 'i-ri-facebook-fill',
+  //   to: '/auth/facebook',
+  // },
 ]
 </script>
 
