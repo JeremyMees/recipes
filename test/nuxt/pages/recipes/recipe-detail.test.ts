@@ -10,11 +10,13 @@ import { detail } from '~~/test/fixtures/recipes'
 import { testId } from '~~/test/unit/stubs/selectors'
 import type { RecipeDetail } from '#shared/types/recipe'
 
-const { useRouteMock } = vi.hoisted(() => ({
+const { useRouteMock, wakeLock } = vi.hoisted(() => ({
   useRouteMock: vi.fn(() => ({ params: { id: 'r1' } })),
+  wakeLock: { isSupported: { value: true }, request: vi.fn() },
 }))
 
 mockNuxtImport('useRoute', () => useRouteMock)
+mockNuxtImport('useWakeLock', () => () => wakeLock)
 
 let response: RecipeDetail | undefined
 let status: number
@@ -31,6 +33,7 @@ registerEndpoint('/api/recipes/r1', {
 beforeEach(() => {
   response = detail()
   status = 200
+  wakeLock.request.mockClear()
 })
 
 function mountPage() {
@@ -109,6 +112,58 @@ describe('recipe detail page', () => {
     const component = await mountLoaded()
 
     expect(component.text()).toContain('Volgende keer minder zout.')
+  })
+
+  it('keeps the screen awake once the recipe has loaded', async () => {
+    await mountLoaded()
+
+    expect(wakeLock.request).toHaveBeenCalledWith('screen')
+  })
+
+  it('hides the description when there is none', async () => {
+    response = detail({ description: null })
+
+    const component = await mountLoaded()
+
+    expect(component.text()).not.toContain('Klassieke pastasaus')
+  })
+
+  it('hides the ingredients section when there are none', async () => {
+    response = detail({ ingredients: [] })
+
+    const component = await mountLoaded()
+
+    expect(component.text()).not.toContain('Ingrediënten')
+  })
+
+  it('falls back to a default label when the source has no name', async () => {
+    response = detail({ sourceName: null })
+
+    const component = await mountLoaded()
+
+    expect(component.text()).toContain('Bekijk het origineel')
+  })
+
+  it('shows tags when the recipe has them', async () => {
+    response = detail({ tags: ['vega', 'snel'] })
+
+    const component = await mountLoaded()
+
+    expect(component.text()).toContain('vega')
+    expect(component.text()).toContain('snel')
+  })
+
+  it('toggles an ingredient when checked and unchecked', async () => {
+    const component = await mountLoaded()
+    const checkbox = component.findAll(testId('ingredient-checkbox'))[0]!
+
+    expect(checkbox.attributes('aria-checked')).toBe('false')
+
+    await checkbox.trigger('click')
+    expect(checkbox.attributes('aria-checked')).toBe('true')
+
+    await checkbox.trigger('click')
+    expect(checkbox.attributes('aria-checked')).toBe('false')
   })
 
   it('links back to the original source', async () => {

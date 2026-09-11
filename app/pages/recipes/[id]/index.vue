@@ -3,6 +3,16 @@ const route = useRoute()
 const id = computed(() => String(route.params.id))
 
 const { data: recipe, isPending, error } = useRecipeQuery(id)
+const { isSupported: isWakeLockSupported, request: requestWakeLock } =
+  useWakeLock()
+
+watch(
+  recipe,
+  value => {
+    if (value && isWakeLockSupported.value) requestWakeLock('screen')
+  },
+  { immediate: true },
+)
 
 const checked = ref<Set<number>>(new Set())
 
@@ -134,6 +144,7 @@ useSeoMeta({ title: () => recipe.value?.title ?? 'Recept' })
               <UCheckbox
                 :model-value="checked.has(row.index)"
                 :label="row.text"
+                data-test-id="ingredient-checkbox"
                 @update:model-value="toggle(row.index)"
               />
             </li>
