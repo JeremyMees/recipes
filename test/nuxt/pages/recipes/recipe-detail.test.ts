@@ -5,7 +5,7 @@ import {
   registerEndpoint,
 } from '@nuxt/test-utils/runtime'
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
-import RecipeDetailPage from '~/pages/recipes/[id].vue'
+import RecipeDetailPage from '~/pages/recipes/[id]/index.vue'
 import { detail } from '~~/test/fixtures/recipes'
 import { testId } from '~~/test/unit/stubs/selectors'
 import type { RecipeDetail } from '#shared/types/recipe'
