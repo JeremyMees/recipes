@@ -84,6 +84,19 @@ describe('recipe detail page', () => {
     expect(component.find(testId('recipe-detail-image')).exists()).toBe(false)
   })
 
+  it('names the image and title for a shared view transition with the recipe card', async () => {
+    response = detail({ imageUrl: 'https://bucket.test/a.webp' })
+
+    const component = await mountLoaded()
+
+    expect(
+      component.get(testId('recipe-detail-image')).attributes('style'),
+    ).toContain('view-transition-name: recipe-image-r1')
+    expect(component.get('h1').attributes('style')).toContain(
+      'view-transition-name: recipe-title-r1',
+    )
+  })
+
   it('offers deleting for your own recipe', async () => {
     const component = await mountLoaded()
 

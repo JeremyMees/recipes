@@ -97,6 +97,19 @@ describe('RecipeCard', () => {
     expect(shown.get(testId('recipe-card-author')).text()).toBe('Mama')
   })
 
+  it('names the image and title for a shared view transition with the detail page', async () => {
+    const component = await mount({
+      recipe: makeRecipe({ imageUrl: 'https://x.test/a.jpg' }),
+    })
+
+    expect(
+      component.get(testId('recipe-card-image')).attributes('style'),
+    ).toContain('view-transition-name: recipe-image-r1')
+    expect(
+      component.get(testId('recipe-card-title')).attributes('style'),
+    ).toContain('view-transition-name: recipe-title-r1')
+  })
+
   it('shows at most three tags', async () => {
     const component = await mount({
       recipe: makeRecipe({

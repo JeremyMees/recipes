@@ -85,6 +85,7 @@ useSeoMeta({ title: () => recipe.value?.title ?? 'Recept' })
         v-if="recipe.imageUrl"
         :src="recipe.imageUrl"
         :alt="recipe.title"
+        :style="{ viewTransitionName: `recipe-image-${recipe.id}` }"
         sizes="100vw lg:1200px"
         data-test-id="recipe-detail-image"
         class="aspect-video w-full rounded-lg object-cover"
@@ -92,7 +93,10 @@ useSeoMeta({ title: () => recipe.value?.title ?? 'Recept' })
 
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="flex flex-col gap-2">
-          <h1 class="text-3xl font-semibold text-highlighted">
+          <h1
+            :style="{ viewTransitionName: `recipe-title-${recipe.id}` }"
+            class="text-3xl font-semibold text-highlighted"
+          >
             {{ recipe.title }}
           </h1>
 

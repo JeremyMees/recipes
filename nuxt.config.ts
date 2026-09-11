@@ -3,6 +3,10 @@ const storageEndpoint = process.env.AWS_ENDPOINT_URL_S3
 export default defineNuxtConfig({
   compatibilityDate: '2026-06-30',
 
+  experimental: {
+    viewTransition: true,
+  },
+
   modules: [
     '@nuxt/eslint',
     '@nuxt/ui',

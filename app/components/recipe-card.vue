@@ -29,6 +29,7 @@ const servings = computed(() => formatServings(props.recipe.servings))
         v-if="props.recipe.imageUrl"
         :src="props.recipe.imageUrl"
         :alt="props.recipe.title"
+        :style="{ viewTransitionName: `recipe-image-${props.recipe.id}` }"
         sizes="100vw sm:50vw lg:384px"
         loading="lazy"
         data-test-id="recipe-card-image"
@@ -46,6 +47,7 @@ const servings = computed(() => formatServings(props.recipe.servings))
     <div class="flex flex-1 flex-col gap-2 p-4">
       <h3
         data-test-id="recipe-card-title"
+        :style="{ viewTransitionName: `recipe-title-${props.recipe.id}` }"
         class="font-semibold text-highlighted line-clamp-2"
       >
         {{ props.recipe.title }}
