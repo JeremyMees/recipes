@@ -17,48 +17,6 @@ const duration = computed(() =>
 )
 
 const servings = computed(() => formatServings(props.recipe.servings))
-
-const IMAGE_SIZES = '100vw sm:50vw lg:384px'
-
-const loading = computed(() => (props.index < 6 ? 'eager' : 'lazy'))
-
-const $img = useImage()
-const imageSizes = computed(() =>
-  props.recipe.imageUrl
-    ? $img.getSizes(props.recipe.imageUrl, { sizes: IMAGE_SIZES })
-    : null,
-)
-
-useHead(() => ({
-  link: [
-    ...(props.index < 2 && imageSizes.value
-      ? [
-          {
-            key: `recipe-card-preload-mobile-${props.recipe.id}`,
-            rel: 'preload' as const,
-            as: 'image' as const,
-            href: imageSizes.value.src,
-            imagesizes: imageSizes.value.sizes,
-            imagesrcset: imageSizes.value.srcset,
-            media: '(max-width: 639px)',
-          },
-        ]
-      : []),
-    ...(props.index < 4 && imageSizes.value
-      ? [
-          {
-            key: `recipe-card-preload-medium-${props.recipe.id}`,
-            rel: 'preload' as const,
-            as: 'image' as const,
-            href: imageSizes.value.src,
-            imagesizes: imageSizes.value.sizes,
-            imagesrcset: imageSizes.value.srcset,
-            media: '(min-width: 640px)',
-          },
-        ]
-      : []),
-  ],
-}))
 </script>
 
 <template>
@@ -73,8 +31,9 @@ useHead(() => ({
         :src="props.recipe.imageUrl"
         :alt="props.recipe.title"
         :style="{ viewTransitionName: `recipe-image-${props.recipe.id}` }"
-        :sizes="IMAGE_SIZES"
-        :loading="loading"
+        sizes="100vw sm:50vw lg:384px"
+        :loading="index < 3 ? 'eager' : 'lazy'"
+        :fetchpriority="index < 3 ? 'high' : 'auto'"
         data-test-id="recipe-card-image"
         class="size-full object-cover transition group-hover:scale-105"
       />

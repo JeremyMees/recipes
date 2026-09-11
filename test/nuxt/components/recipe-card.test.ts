@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import RecipeCard from '~/components/recipe-card.vue'
-import { listItem as makeRecipe, listItemById } from '~~/test/fixtures/recipes'
+import { listItem as makeRecipe } from '~~/test/fixtures/recipes'
 import type { RecipeListItem } from '#shared/types/recipe'
 import { testId } from '~~/test/unit/stubs/selectors'
-import { injectHead } from '#imports'
 
 function mount(
   props: Partial<{
@@ -16,18 +15,6 @@ function mount(
   return mountSuspended(RecipeCard, {
     props: { recipe: makeRecipe(), index: 0, ...props },
   })
-}
-
-function preloadMediaFor(recipeId: string) {
-  return [...injectHead().entries.values()]
-    .flatMap(entry => {
-      const input = entry.input as { link?: { key: string; media: string }[] }
-      return typeof input === 'object' && input !== null
-        ? (input.link ?? [])
-        : []
-    })
-    .filter(link => link.key.endsWith(`-${recipeId}`))
-    .map(link => link.media)
 }
 
 describe('RecipeCard', () => {
@@ -95,14 +82,14 @@ describe('RecipeCard', () => {
     )
   })
 
-  it('eager loads the first six images and lazy loads the rest', async () => {
+  it('eager loads the first three images and lazy loads the rest', async () => {
     const early = await mount({
       recipe: makeRecipe({ imageUrl: 'https://x.test/a.jpg' }),
-      index: 5,
+      index: 2,
     })
     const late = await mount({
       recipe: makeRecipe({ imageUrl: 'https://x.test/a.jpg' }),
-      index: 6,
+      index: 3,
     })
 
     expect(early.get(testId('recipe-card-image')).attributes('loading')).toBe(
@@ -113,52 +100,22 @@ describe('RecipeCard', () => {
     )
   })
 
-  it('preloads for both mobile and larger screens within the first two cards', async () => {
-    const component = await mount({
-      recipe: listItemById('preload-1', { imageUrl: 'https://x.test/a.jpg' }),
-      index: 1,
+  it('gives the first three images a high fetch priority', async () => {
+    const early = await mount({
+      recipe: makeRecipe({ imageUrl: 'https://x.test/a.jpg' }),
+      index: 2,
     })
-
-    expect(preloadMediaFor('preload-1')).toEqual(
-      expect.arrayContaining(['(max-width: 639px)', '(min-width: 640px)']),
-    )
-
-    component.unmount()
-  })
-
-  it('preloads for larger screens only between the third and fourth cards', async () => {
-    const component = await mount({
-      recipe: listItemById('preload-2', { imageUrl: 'https://x.test/a.jpg' }),
+    const late = await mount({
+      recipe: makeRecipe({ imageUrl: 'https://x.test/a.jpg' }),
       index: 3,
     })
-    const media = preloadMediaFor('preload-2')
 
-    expect(media).toContain('(min-width: 640px)')
-    expect(media).not.toContain('(max-width: 639px)')
-
-    component.unmount()
-  })
-
-  it('does not preload past the first four cards', async () => {
-    const component = await mount({
-      recipe: listItemById('preload-3', { imageUrl: 'https://x.test/a.jpg' }),
-      index: 4,
-    })
-
-    expect(preloadMediaFor('preload-3')).toHaveLength(0)
-
-    component.unmount()
-  })
-
-  it('does not preload an image when there is none', async () => {
-    const component = await mount({
-      recipe: listItemById('preload-4', { imageUrl: null }),
-      index: 0,
-    })
-
-    expect(preloadMediaFor('preload-4')).toHaveLength(0)
-
-    component.unmount()
+    expect(
+      early.get(testId('recipe-card-image')).attributes('fetchpriority'),
+    ).toBe('high')
+    expect(
+      late.get(testId('recipe-card-image')).attributes('fetchpriority'),
+    ).toBe('auto')
   })
 
   it('falls back to a placeholder without an image', async () => {
