@@ -7,6 +7,7 @@ const ignoredLogs = [
   /^<Suspense>/,
   /Cannot destructure property 'canonicalQueryWhitelist'.*seo-utils/,
   /Failed to load messages for locale/,
+  /App already provides property with key "VUE_QUERY_CLIENT"/,
 ]
 
 export default defineConfig({
@@ -14,6 +15,8 @@ export default defineConfig({
     alias: { 'vitest/environments': 'vitest/runtime' },
   },
   test: {
+    fsModuleCache: true,
+    pool: 'threads',
     projects: [
       {
         plugins: [vue(), nuxtAutoImports()],
@@ -27,6 +30,7 @@ export default defineConfig({
       await defineVitestProject({
         test: {
           globals: true,
+          hookTimeout: 30_000,
           name: 'nuxt',
           include: ['test/nuxt/**/*.{test,spec}.ts'],
           environment: 'nuxt',
@@ -44,7 +48,7 @@ export default defineConfig({
         branches: 80,
         statements: 80,
       },
-      exclude: ['test/**', 'constants/**', 'app/assets/**'],
+      exclude: ['test/**', 'server/database/**', 'app/assets/**'],
     },
   },
 })

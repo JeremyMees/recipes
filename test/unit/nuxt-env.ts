@@ -10,6 +10,7 @@ export const nuxtAliases = {
   '~~': root,
   '#app': resolve(import.meta.dirname, 'stubs/nuxt.ts'),
   '#nitro': resolve(import.meta.dirname, 'stubs/nitro.ts'),
+  '#auth': resolve(import.meta.dirname, 'stubs/auth.ts'),
 }
 
 export function nuxtAutoImports(): Plugin {
@@ -35,9 +36,18 @@ export function nuxtAutoImports(): Plugin {
         'getRequestHeader',
         'getHeader',
         'getRequestIP',
+        'getRouterParam',
         'setHeader',
       ].map(name => ({ name, from: 'h3' })),
       { name: 'defineCachedEventHandler', from: '#nitro' },
+      ...[
+        'requireUserSession',
+        'getUserSession',
+        'setUserSession',
+        'clearUserSession',
+        'defineOAuthGoogleEventHandler',
+        'defineOAuthFacebookEventHandler',
+      ].map(name => ({ name, from: '#auth' })),
     ],
     presets: ['vue'],
   })
