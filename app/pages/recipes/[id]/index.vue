@@ -87,6 +87,7 @@ useSeoMeta({ title: () => recipe.value?.title ?? 'Recept' })
         :alt="recipe.title"
         :style="{ viewTransitionName: `recipe-image-${recipe.id}` }"
         sizes="100vw lg:1200px"
+        preload
         data-test-id="recipe-detail-image"
         class="aspect-video w-full rounded-lg object-cover"
       />

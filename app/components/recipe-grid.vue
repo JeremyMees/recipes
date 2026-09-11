@@ -54,8 +54,9 @@ const props = withDefaults(
 
   <UPageGrid v-else data-test-id="recipe-grid">
     <RecipeCard
-      v-for="recipe in props.recipes"
+      v-for="(recipe, i) in props.recipes"
       :key="recipe.id"
+      :index="i"
       :recipe="recipe"
       :show-author="props.showAuthor"
     />
