@@ -2,6 +2,14 @@
 const route = useRoute()
 const id = computed(() => String(route.params.id))
 
+function goBack() {
+  if (window.history.state?.back) {
+    window.history.back()
+  } else {
+    navigateTo('/')
+  }
+}
+
 const { data: recipe, isPending, error } = useRecipeQuery(id)
 const { isSupported: isWakeLockSupported, request: requestWakeLock } =
   useWakeLock()
@@ -65,6 +73,16 @@ useSeoMeta({ title: () => recipe.value?.title ?? 'Recept' })
 
 <template>
   <div class="flex flex-col gap-6">
+    <UButton
+      icon="i-ri-arrow-left-line"
+      label="Terug"
+      color="neutral"
+      variant="ghost"
+      class="self-start"
+      data-test-id="recipe-detail-back"
+      @click="goBack"
+    />
+
     <UAlert
       v-if="error"
       color="error"
