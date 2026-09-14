@@ -35,6 +35,28 @@ export function useRecipeImageUpload() {
   })
 }
 
+export function useRecipeImageNormalize() {
+  const upload = useRecipeImageUpload()
+  const remove = useRecipeImageDelete()
+
+  return useMutation({
+    mutationFn: async (source: UploadedImage): Promise<UploadedImage> => {
+      const response = await fetch(source.url)
+
+      if (!response.ok) throw new Error('source unreadable')
+
+      const blob = await response.blob()
+      const uploaded = await upload.mutateAsync(
+        new File([blob], 'imported', { type: blob.type }),
+      )
+
+      await remove.mutateAsync(source.key).catch(() => {})
+
+      return uploaded
+    },
+  })
+}
+
 export function useRecipeImageDelete() {
   return useMutation({
     mutationFn: (key: string) =>

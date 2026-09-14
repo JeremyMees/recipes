@@ -7,5 +7,3 @@ allowBuilds:
   vue-demi: false
 minimumReleaseAgeExclude:
   - zod@4.6.1
-patchedDependencies:
-  ipx@4.0.0-beta.1: patches/ipx@4.0.0-beta.1.patch

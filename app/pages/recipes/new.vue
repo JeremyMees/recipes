@@ -10,6 +10,7 @@ const importSource = ref<RecipeDraftSource | null>(null)
 const toast = useToast()
 const importRecipe = useImportRecipe()
 const createRecipe = useCreateRecipe()
+const normalizeImage = useRecipeImageNormalize()
 
 const importMessage = computed(() => {
   switch (importSource.value) {
@@ -53,6 +54,10 @@ async function submitImport() {
     importSource.value = result.source
     draftImageUrl.value = imageUrl
     draft.value = rest
+
+    if (imageUrl && rest.imageKey) {
+      await normalize({ key: rest.imageKey, url: imageUrl })
+    }
   } catch {
     toast.add({
       title: 'Link kon niet worden gelezen',
@@ -60,6 +65,17 @@ async function submitImport() {
       color: 'error',
       icon: 'i-ri-error-warning-line',
     })
+  }
+}
+
+async function normalize(source: { key: string; url: string }) {
+  try {
+    const image = await normalizeImage.mutateAsync(source)
+
+    draftImageUrl.value = image.url
+    draft.value = { ...draft.value, imageKey: image.key }
+  } catch {
+    return
   }
 }
 

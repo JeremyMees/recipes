@@ -1,5 +1,3 @@
-const storageEndpoint = process.env.AWS_ENDPOINT_URL_S3
-
 export default defineNuxtConfig({
   compatibilityDate: '2026-06-30',
 
@@ -13,7 +11,6 @@ export default defineNuxtConfig({
     '@nuxt/test-utils/module',
     'nuxt-auth-utils',
     '@vueuse/nuxt',
-    '@nuxt/image',
     '@vite-pwa/nuxt',
     '@sentry/nuxt/module',
   ],
@@ -35,12 +32,6 @@ export default defineNuxtConfig({
     public: {
       sentryDsn: process.env.SENTRY_DSN ?? '',
     },
-  },
-
-  image: {
-    provider: 'ipx',
-    quality: 80,
-    domains: storageEndpoint ? [new URL(storageEndpoint).hostname] : [],
   },
 
   pwa: {

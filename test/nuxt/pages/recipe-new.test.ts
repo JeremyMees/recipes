@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   mockNuxtImport,
   mountSuspended,
@@ -9,6 +9,22 @@ import { readBody } from 'h3'
 import NewRecipePage from '~/pages/recipes/new.vue'
 import type { RecipeDraftSource } from '#shared/types/recipe'
 import { testId } from '~~/test/unit/stubs/selectors'
+import {
+  createCanvasStub,
+  spyOnCanvasElement,
+  stubImageBitmap,
+  type CanvasStub,
+} from '~~/test/unit/stubs/canvas'
+import { RECIPE_IMAGE_KEY as NEW_KEY } from '~~/test/fixtures/recipes'
+
+const IMPORTED_KEY = 'recipes/22222222-2222-2222-2222-222222222222.jpg'
+const IMPORTED_URL = `https://bucket.test/recipes-images/${IMPORTED_KEY}`
+
+let canvas: CanvasStub
+let deleteBodies: unknown[]
+let sourceStatus: number
+let createStatus: number
+let importStatus: number
 
 const { navigateToMock } = vi.hoisted(() => ({
   navigateToMock: vi.fn(),
@@ -25,7 +41,11 @@ const createdBodies: unknown[] = []
 
 registerEndpoint('/api/recipes/import', {
   method: 'POST',
-  handler: () => importResponse,
+  handler: () => {
+    if (importStatus !== 200) throw createError({ statusCode: importStatus })
+
+    return importResponse
+  },
 })
 
 registerEndpoint('/api/recipes', {
@@ -33,7 +53,28 @@ registerEndpoint('/api/recipes', {
   handler: async event => {
     createdBodies.push(await readBody(event))
 
+    if (createStatus !== 200) throw createError({ statusCode: createStatus })
+
     return { id: 'saved-1' }
+  },
+})
+
+registerEndpoint('/api/recipes/image-upload', {
+  method: 'POST',
+  handler: () => ({
+    key: NEW_KEY,
+    url: `https://bucket.test/recipes-images/${NEW_KEY}`,
+    uploadUrl: `https://bucket.test/signed/${NEW_KEY}`,
+    headers: { 'content-type': 'image/webp' },
+  }),
+})
+
+registerEndpoint('/api/recipes/image-delete', {
+  method: 'POST',
+  handler: async event => {
+    deleteBodies.push(await readBody(event))
+
+    return { key: IMPORTED_KEY }
   },
 })
 
@@ -78,7 +119,32 @@ describe('add recipe page', () => {
   beforeEach(() => {
     navigateToMock.mockClear()
     createdBodies.length = 0
+    deleteBodies = []
+    sourceStatus = 200
+    createStatus = 200
+    importStatus = 200
     importResponse = { source: 'jsonld', draft: emptyDraft() }
+
+    canvas = createCanvasStub()
+
+    stubImageBitmap(canvas, 3000, 2000)
+    spyOnCanvasElement(canvas)
+
+    vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') return new Response(null, { status: 200 })
+
+      return new Response(
+        sourceStatus === 200
+          ? new Blob(['stored'], { type: 'image/jpeg' })
+          : null,
+        { status: sourceStatus },
+      )
+    })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it('shows no import feedback before anything is imported', async () => {
@@ -194,6 +260,145 @@ describe('add recipe page', () => {
       sourceName: 'leukerecepten.nl',
     })
     expect(navigateToMock).toHaveBeenCalledWith('/recipes/saved-1')
+  })
+
+  it('replaces an imported image with a resized webp before saving', async () => {
+    importResponse = {
+      source: 'jsonld',
+      draft: emptyDraft({
+        title: 'Spaghetti bolognese',
+        imageKey: IMPORTED_KEY,
+        imageUrl: IMPORTED_URL,
+      }),
+    }
+
+    const component = await mountPage()
+
+    await importUrl(component)
+
+    await vi.waitFor(() => expect(deleteBodies).toHaveLength(1))
+
+    expect(canvas.drawn).toEqual([{ width: 1200, height: 800 }])
+    expect(deleteBodies).toEqual([{ key: IMPORTED_KEY }])
+
+    await component.get(testId('recipe-form')).trigger('submit')
+
+    await vi.waitFor(() => expect(createdBodies).toHaveLength(1))
+
+    expect(createdBodies[0]).toMatchObject({ imageKey: NEW_KEY })
+  })
+
+  it('shows the replacement in the form preview', async () => {
+    importResponse = {
+      source: 'jsonld',
+      draft: emptyDraft({
+        title: 'Spaghetti bolognese',
+        imageKey: IMPORTED_KEY,
+        imageUrl: IMPORTED_URL,
+      }),
+    }
+
+    const component = await mountPage()
+
+    await importUrl(component)
+
+    await vi.waitFor(() =>
+      expect(component.get(testId('recipe-form-image')).attributes('src')).toBe(
+        `https://bucket.test/recipes-images/${NEW_KEY}`,
+      ),
+    )
+  })
+
+  it('keeps the imported image when it cannot be re-encoded', async () => {
+    sourceStatus = 404
+    importResponse = {
+      source: 'jsonld',
+      draft: emptyDraft({
+        title: 'Spaghetti bolognese',
+        imageKey: IMPORTED_KEY,
+        imageUrl: IMPORTED_URL,
+      }),
+    }
+
+    const component = await mountPage()
+
+    await importUrl(component)
+
+    await vi.waitFor(() =>
+      expect(
+        (component.get(testId('recipe-form-title')).element as HTMLInputElement)
+          .value,
+      ).toBe('Spaghetti bolognese'),
+    )
+
+    await component.get(testId('recipe-form')).trigger('submit')
+
+    await vi.waitFor(() => expect(createdBodies).toHaveLength(1))
+
+    expect(createdBodies[0]).toMatchObject({ imageKey: IMPORTED_KEY })
+    expect(deleteBodies).toHaveLength(0)
+  })
+
+  it('does not try to re-encode an import that came without an image', async () => {
+    importResponse = {
+      source: 'jsonld',
+      draft: emptyDraft({ title: 'Spaghetti bolognese' }),
+    }
+
+    const component = await mountPage()
+
+    await importUrl(component)
+
+    await vi.waitFor(() =>
+      expect(
+        (component.get(testId('recipe-form-title')).element as HTMLInputElement)
+          .value,
+      ).toBe('Spaghetti bolognese'),
+    )
+
+    expect(canvas.drawn).toHaveLength(0)
+    expect(deleteBodies).toHaveLength(0)
+  })
+
+  it('stays on the form when saving fails', async () => {
+    createStatus = 500
+    importResponse = {
+      source: 'jsonld',
+      draft: emptyDraft({ title: 'Spaghetti bolognese' }),
+    }
+
+    const component = await mountPage()
+
+    await importUrl(component)
+
+    await vi.waitFor(() =>
+      expect(
+        (component.get(testId('recipe-form-title')).element as HTMLInputElement)
+          .value,
+      ).toBe('Spaghetti bolognese'),
+    )
+
+    await component.get(testId('recipe-form')).trigger('submit')
+
+    await vi.waitFor(() => expect(createdBodies).toHaveLength(1))
+
+    expect(navigateToMock).not.toHaveBeenCalled()
+    expect(component.find(testId('recipe-form')).exists()).toBe(true)
+  })
+
+  it('leaves the form usable when the link cannot be read', async () => {
+    importStatus = 500
+
+    const component = await mountPage()
+
+    await importUrl(component)
+
+    await vi.waitFor(() =>
+      expect(component.find(testId('import-message')).exists()).toBe(false),
+    )
+
+    expect(component.find(testId('recipe-form')).exists()).toBe(true)
+    expect(createdBodies).toHaveLength(0)
   })
 
   it('refuses to save without a title', async () => {

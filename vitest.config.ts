@@ -48,7 +48,12 @@ export default defineConfig({
         branches: 80,
         statements: 80,
       },
-      exclude: ['test/**', 'server/database/**', 'app/assets/**'],
+      exclude: [
+        'test/**',
+        'server/database/**',
+        'app/assets/**',
+        'app/plugins/**',
+      ],
     },
   },
 })

@@ -5,6 +5,7 @@ import { readBody } from 'h3'
 import { defineComponent } from 'vue'
 import {
   useRecipeImageDelete,
+  useRecipeImageNormalize,
   useRecipeImageUpload,
 } from '~/composables/use-recipe-image-upload'
 import {
@@ -21,8 +22,10 @@ let canvas: CanvasStub
 let presignBodies: unknown[]
 let deleteBodies: unknown[]
 let putRequests: { url: string; headers: unknown; body: unknown }[]
+let sourceRequests: string[]
 let putStatus: number
 let deleteStatus: number
+let sourceStatus: number
 
 registerEndpoint('/api/recipes/image-upload', {
   method: 'POST',
@@ -58,22 +61,35 @@ beforeEach(() => {
   presignBodies = []
   deleteBodies = []
   putRequests = []
+  sourceRequests = []
   putStatus = 200
   deleteStatus = 200
+  sourceStatus = 200
 
   canvas = createCanvasStub()
 
   stubImageBitmap(canvas, 3000, 2000)
   spyOnCanvasElement(canvas)
 
-  vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
-    putRequests.push({
-      url: String(url),
-      headers: init.headers,
-      body: init.body,
-    })
+  vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+    if (init?.method === 'PUT') {
+      putRequests.push({
+        url: String(url),
+        headers: init.headers,
+        body: init.body,
+      })
 
-    return new Response(null, { status: putStatus })
+      return new Response(null, { status: putStatus })
+    }
+
+    sourceRequests.push(String(url))
+
+    return new Response(
+      sourceStatus === 200
+        ? new Blob(['stored'], { type: 'image/jpeg' })
+        : null,
+      { status: sourceStatus },
+    )
   })
 })
 
@@ -86,6 +102,7 @@ async function withComposables() {
   const captured: {
     upload?: ReturnType<typeof useRecipeImageUpload>
     remove?: ReturnType<typeof useRecipeImageDelete>
+    normalize?: ReturnType<typeof useRecipeImageNormalize>
   } = {}
 
   await mountSuspended(
@@ -93,6 +110,7 @@ async function withComposables() {
       setup() {
         captured.upload = useRecipeImageUpload()
         captured.remove = useRecipeImageDelete()
+        captured.normalize = useRecipeImageNormalize()
 
         return () => null
       },
@@ -191,5 +209,86 @@ describe('useRecipeImageDelete', () => {
     const { remove } = await withComposables()
 
     await expect(remove!.mutateAsync(KEY)).rejects.toThrow()
+  })
+})
+
+describe('useRecipeImageNormalize', () => {
+  const imported = {
+    key: 'recipes/imported.jpg',
+    url: 'https://bucket.test/recipes-images/recipes/imported.jpg',
+  }
+
+  it('re-encodes a stored image and returns the replacement', async () => {
+    const { normalize } = await withComposables()
+
+    const result = await normalize!.mutateAsync(imported)
+
+    expect(sourceRequests).toEqual([imported.url])
+    expect(presignBodies).toEqual([{ contentType: 'image/webp' }])
+    expect(result).toEqual({
+      key: KEY,
+      url: `https://bucket.test/recipes-images/${KEY}`,
+    })
+  })
+
+  it('stores webp rather than the jpeg it fetched', async () => {
+    const { normalize } = await withComposables()
+
+    await normalize!.mutateAsync(imported)
+
+    const body = putRequests[0]!.body as Blob
+
+    expect(body.type).toBe('image/webp')
+  })
+
+  it('caps the long edge so the replacement is not full size', async () => {
+    const { normalize } = await withComposables()
+
+    await normalize!.mutateAsync(imported)
+
+    expect(canvas.drawn).toEqual([{ width: 1200, height: 800 }])
+  })
+
+  it('discards the original once the replacement is stored', async () => {
+    const { normalize } = await withComposables()
+
+    await normalize!.mutateAsync(imported)
+
+    expect(deleteBodies).toEqual([{ key: imported.key }])
+  })
+
+  it('keeps the replacement when the original cannot be discarded', async () => {
+    deleteStatus = 409
+
+    const { normalize } = await withComposables()
+
+    await expect(normalize!.mutateAsync(imported)).resolves.toEqual({
+      key: KEY,
+      url: `https://bucket.test/recipes-images/${KEY}`,
+    })
+  })
+
+  it('fails without uploading when the stored image cannot be read', async () => {
+    sourceStatus = 404
+
+    const { normalize } = await withComposables()
+
+    await expect(normalize!.mutateAsync(imported)).rejects.toThrow(
+      'source unreadable',
+    )
+    expect(presignBodies).toHaveLength(0)
+    expect(putRequests).toHaveLength(0)
+    expect(deleteBodies).toHaveLength(0)
+  })
+
+  it('leaves the original in place when the replacement upload fails', async () => {
+    putStatus = 403
+
+    const { normalize } = await withComposables()
+
+    await expect(normalize!.mutateAsync(imported)).rejects.toThrow(
+      'upload failed',
+    )
+    expect(deleteBodies).toHaveLength(0)
   })
 })

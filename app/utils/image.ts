@@ -1,4 +1,4 @@
-const MAX_EDGE = 1600
+const MAX_EDGE = 1200
 const QUALITY = 0.8
 
 export async function toWebpBlob(file: File): Promise<Blob> {

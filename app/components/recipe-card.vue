@@ -26,14 +26,16 @@ const servings = computed(() => formatServings(props.recipe.servings))
     class="group flex flex-col overflow-hidden rounded-lg border border-default bg-default transition hover:border-accented focus-visible:outline-2 focus-visible:outline-primary"
   >
     <div class="aspect-video overflow-hidden bg-elevated">
-      <NuxtImg
+      <img
         v-if="props.recipe.imageUrl"
         :src="props.recipe.imageUrl"
         :alt="props.recipe.title"
         :style="{ viewTransitionName: `recipe-image-${props.recipe.id}` }"
-        sizes="100vw sm:50vw lg:384px"
         :loading="index < 3 ? 'eager' : 'lazy'"
         :fetchpriority="index < 3 ? 'high' : 'auto'"
+        width="1200"
+        height="675"
+        decoding="async"
         data-test-id="recipe-card-image"
         class="size-full object-cover transition group-hover:scale-105"
       />

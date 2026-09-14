@@ -91,14 +91,16 @@ useSeoMeta({ title: () => recipe.value?.title ?? 'Recept' })
     </div>
 
     <template v-else-if="recipe">
-      <NuxtImg
+      <img
         v-if="recipe.imageUrl"
         :src="recipe.imageUrl"
         :alt="recipe.title"
         :style="{ viewTransitionName: `recipe-image-${recipe.id}` }"
-        sizes="100vw lg:1200px"
         loading="eager"
         fetchpriority="high"
+        width="1200"
+        height="675"
+        decoding="sync"
         data-test-id="recipe-detail-image"
         class="aspect-video max-h-96 w-full rounded-lg object-cover"
       />
