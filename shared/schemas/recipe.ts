@@ -63,9 +63,12 @@ export const recipeImportSchema = z.object({
   url: z.url({ protocol: /^https?$/ }).max(2000),
 })
 
+export const RECIPE_PAGE_SIZE = 2
+
 export const recipeQuerySchema = z.object({
   q: z.string().trim().max(200).optional(),
   tag: z.string().trim().max(40).optional(),
+  cursor: z.string().trim().max(80).optional(),
 })
 
 export type RecipeInput = z.infer<typeof recipeInputSchema>

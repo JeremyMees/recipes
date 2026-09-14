@@ -34,7 +34,10 @@ function record(name: string) {
     calls[name] ??= []
     calls[name].push({ method: event.method, query })
 
-    return name
+    return {
+      items: [{ id: `${name}-${calls[name].length}` }],
+      nextCursor: query.cursor ? null : `cursor-${name}`,
+    }
   }
 }
 
@@ -129,14 +132,19 @@ describe('useRecipesQuery', () => {
   it('reads own recipes from /api/recipes', async () => {
     const { result } = await runComposable(() => useRecipesQuery('own'))
 
-    await vi.waitFor(() => expect(result.data.value).toBe('list'))
+    await vi.waitFor(() =>
+      expect(result.recipes.value).toEqual([{ id: 'list-1' }]),
+    )
     expect(calls.list).toHaveLength(1)
+    expect(calls.list![0]!.query.cursor).toBeUndefined()
   })
 
   it('reads family recipes from the family endpoint', async () => {
     const { result } = await runComposable(() => useRecipesQuery('family'))
 
-    await vi.waitFor(() => expect(result.data.value).toBe('family'))
+    await vi.waitFor(() =>
+      expect(result.recipes.value).toEqual([{ id: 'family-1' }]),
+    )
     expect(calls.family).toHaveLength(1)
   })
 
@@ -145,7 +153,7 @@ describe('useRecipesQuery', () => {
       useRecipesQuery('own', () => ({ q: 'pasta', tag: 'italiaans' })),
     )
 
-    await vi.waitFor(() => expect(result.data.value).toBe('list'))
+    await vi.waitFor(() => expect(result.recipes.value).toHaveLength(1))
 
     expect(calls.list!.at(-1)!.query).toMatchObject({
       q: 'pasta',
@@ -158,13 +166,45 @@ describe('useRecipesQuery', () => {
 
     const { result } = await runComposable(() => useRecipesQuery('own', query))
 
-    await vi.waitFor(() => expect(result.data.value).toBe('list'))
+    await vi.waitFor(() => expect(result.recipes.value).toHaveLength(1))
 
     query.value = { q: 'rijst' }
 
     await vi.waitFor(() => expect(calls.list).toHaveLength(2))
 
     expect(calls.list!.map(call => call.query.q)).toEqual(['pasta', 'rijst'])
+  })
+
+  it('appends the next page to the list when loadMore runs', async () => {
+    const { result } = await runComposable(() => useRecipesQuery('own'))
+
+    await vi.waitFor(() => expect(result.hasNextPage.value).toBe(true))
+
+    result.loadMore()
+
+    await vi.waitFor(() =>
+      expect(result.recipes.value).toEqual([
+        { id: 'list-1' },
+        { id: 'list-2' },
+      ]),
+    )
+
+    expect(calls.list!.at(-1)!.query.cursor).toBe('cursor-list')
+    expect(result.hasNextPage.value).toBe(false)
+  })
+
+  it('ignores loadMore once the last page is in', async () => {
+    const { result } = await runComposable(() => useRecipesQuery('own'))
+
+    await vi.waitFor(() => expect(result.hasNextPage.value).toBe(true))
+
+    result.loadMore()
+
+    await vi.waitFor(() => expect(result.hasNextPage.value).toBe(false))
+
+    result.loadMore()
+
+    expect(calls.list).toHaveLength(2)
   })
 })
 

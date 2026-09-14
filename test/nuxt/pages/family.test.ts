@@ -13,21 +13,24 @@ registerEndpoint('/api/recipes/family', {
       Object.fromEntries(new URL(event.path, 'http://test').searchParams),
     )
 
-    return [
-      {
-        id: 'f1',
-        title: 'Appelmoes van oma',
-        description: null,
-        imageUrl: null,
-        sourceName: null,
-        servings: null,
-        prepMinutes: null,
-        cookMinutes: null,
-        tags: [],
-        createdAt: '2026-09-01T10:00:00.000Z',
-        authorName: 'Oma',
-      },
-    ]
+    return {
+      items: [
+        {
+          id: 'f1',
+          title: 'Appelmoes van oma',
+          description: null,
+          imageUrl: null,
+          sourceName: null,
+          servings: null,
+          prepMinutes: null,
+          cookMinutes: null,
+          tags: [],
+          createdAt: '2026-09-01T10:00:00.000Z',
+          authorName: 'Oma',
+        },
+      ],
+      nextCursor: null,
+    }
   },
 })
 

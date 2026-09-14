@@ -4,6 +4,7 @@ import {
   OTHER_IMAGE_KEY,
   row,
 } from '~~/test/fixtures/recipes'
+import { RECIPE_PAGE_SIZE } from '~~/shared/schemas/recipe'
 
 const { runtimeConfig, database, s3 } = await vi.hoisted(async () => {
   const { createDbStub: create } = await import('~~/test/unit/stubs/db')
@@ -109,9 +110,9 @@ describe('listOwnRecipes', () => {
   it('maps rows to list items with a public image url', async () => {
     database.results.push([listRow({ imageKey: RECIPE_IMAGE_KEY })])
 
-    const [item] = await listOwnRecipes('u1', {})
+    const { items } = await listOwnRecipes('u1', {})
 
-    expect(item).toMatchObject({
+    expect(items[0]).toMatchObject({
       id: 'r1',
       title: 'Spaghetti bolognese',
       imageUrl: `https://s3.test/recipes-images/${RECIPE_IMAGE_KEY}`,
@@ -123,9 +124,47 @@ describe('listOwnRecipes', () => {
   it('leaves the image url null when the recipe has no image', async () => {
     database.results.push([listRow()])
 
-    const [item] = await listOwnRecipes('u1', {})
+    const { items } = await listOwnRecipes('u1', {})
 
-    expect(item!.imageUrl).toBeNull()
+    expect(items[0]!.imageUrl).toBeNull()
+  })
+
+  it('stops at a page and hands back a cursor when more rows exist', async () => {
+    database.results.push(
+      Array.from({ length: RECIPE_PAGE_SIZE + 1 }, (_unused, index) =>
+        listRow({ id: `r${index}` }),
+      ),
+    )
+
+    const { items, nextCursor } = await listOwnRecipes('u1', {})
+
+    expect(items).toHaveLength(RECIPE_PAGE_SIZE)
+    expect(nextCursor).toBe(`2026-09-01T10:00:00.000Z_r${RECIPE_PAGE_SIZE - 1}`)
+  })
+
+  it('leaves the cursor null on the last page', async () => {
+    database.results.push([listRow()])
+
+    await expect(listOwnRecipes('u1', {})).resolves.toMatchObject({
+      nextCursor: null,
+    })
+  })
+
+  it('narrows the query with a cursor', async () => {
+    database.results.push([])
+
+    await listOwnRecipes('u1', { cursor: '2026-09-01T10:00:00.000Z_r1' })
+
+    expect(database.called('where')).toBeDefined()
+    expect(database.called('limit')!.args).toEqual([RECIPE_PAGE_SIZE + 1])
+  })
+
+  it('ignores a cursor it cannot parse', async () => {
+    database.results.push([])
+
+    await expect(
+      listOwnRecipes('u1', { cursor: 'nonsense' }),
+    ).resolves.toMatchObject({ items: [] })
   })
 
   it('orders newest first', async () => {
@@ -157,7 +196,9 @@ describe('listFamilyRecipes', () => {
   it('maps rows the same way', async () => {
     database.results.push([listRow()])
 
-    await expect(listFamilyRecipes('u1', {})).resolves.toHaveLength(1)
+    const { items } = await listFamilyRecipes('u1', {})
+
+    expect(items).toHaveLength(1)
   })
 })
 

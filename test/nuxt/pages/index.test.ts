@@ -14,21 +14,24 @@ registerEndpoint('/api/recipes', {
       Object.fromEntries(new URL(event.path, 'http://test').searchParams),
     )
 
-    return [
-      {
-        id: 'r1',
-        title: 'Spaghetti bolognese',
-        description: null,
-        imageUrl: null,
-        sourceName: null,
-        servings: 4,
-        prepMinutes: 15,
-        cookMinutes: 30,
-        tags: ['pasta'],
-        createdAt: '2026-09-01T10:00:00.000Z',
-        authorName: 'Jeremy',
-      },
-    ]
+    return {
+      items: [
+        {
+          id: 'r1',
+          title: 'Spaghetti bolognese',
+          description: null,
+          imageUrl: null,
+          sourceName: null,
+          servings: 4,
+          prepMinutes: 15,
+          cookMinutes: 30,
+          tags: ['pasta'],
+          createdAt: '2026-09-01T10:00:00.000Z',
+          authorName: 'Jeremy',
+        },
+      ],
+      nextCursor: null,
+    }
   },
 })
 

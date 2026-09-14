@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockEvent } from '~~/test/unit/stubs/nitro'
 import { resetSession } from '~~/test/unit/stubs/auth'
-import { listItem } from '~~/test/fixtures/recipes'
+import { listPage } from '~~/test/fixtures/recipes'
 
 const { listOwnRecipes } = vi.hoisted(() => ({ listOwnRecipes: vi.fn() }))
 
@@ -11,7 +11,7 @@ const handler = (await import('~~/server/api/recipes/index.get')).default
 
 beforeEach(() => {
   resetSession({ id: 'u1' })
-  listOwnRecipes.mockResolvedValue([listItem()])
+  listOwnRecipes.mockResolvedValue(listPage())
 })
 
 describe('GET /api/recipes', () => {
@@ -19,7 +19,7 @@ describe('GET /api/recipes', () => {
     const result = await handler(mockEvent({ path: '/api/recipes' }))
 
     expect(listOwnRecipes).toHaveBeenCalledWith('u1', {})
-    expect(result).toEqual([listItem()])
+    expect(result).toEqual(listPage())
   })
 
   it('passes a search term through', async () => {
@@ -32,6 +32,18 @@ describe('GET /api/recipes', () => {
     await handler(mockEvent({ path: '/api/recipes?tag=oven' }))
 
     expect(listOwnRecipes).toHaveBeenCalledWith('u1', { tag: 'oven' })
+  })
+
+  it('passes a cursor through', async () => {
+    await handler(
+      mockEvent({
+        path: '/api/recipes?cursor=2026-09-01T10%3A00%3A00.000Z_r1',
+      }),
+    )
+
+    expect(listOwnRecipes).toHaveBeenCalledWith('u1', {
+      cursor: '2026-09-01T10:00:00.000Z_r1',
+    })
   })
 
   it('rejects a query the schema does not allow', async () => {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockEvent } from '~~/test/unit/stubs/nitro'
 import { resetSession } from '~~/test/unit/stubs/auth'
-import { listItem } from '~~/test/fixtures/recipes'
+import { listPage } from '~~/test/fixtures/recipes'
 
 const { listFamilyRecipes } = vi.hoisted(() => ({
   listFamilyRecipes: vi.fn(),
@@ -13,7 +13,7 @@ const handler = (await import('~~/server/api/recipes/family.get')).default
 
 beforeEach(() => {
   resetSession({ id: 'u1' })
-  listFamilyRecipes.mockResolvedValue([listItem()])
+  listFamilyRecipes.mockResolvedValue(listPage())
 })
 
 describe('GET /api/recipes/family', () => {
@@ -21,7 +21,7 @@ describe('GET /api/recipes/family', () => {
     const result = await handler(mockEvent({ path: '/api/recipes/family' }))
 
     expect(listFamilyRecipes).toHaveBeenCalledWith('u1', {})
-    expect(result).toEqual([listItem()])
+    expect(result).toEqual(listPage())
   })
 
   it('passes the search query through', async () => {

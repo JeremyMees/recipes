@@ -6,7 +6,10 @@ const query = computed(() =>
   debouncedSearch.value ? { q: debouncedSearch.value } : {},
 )
 
-const { data, isPending, error } = useRecipesQuery('family', query)
+const { recipes, isPending, error, hasNextPage, loadMore } = useRecipesQuery(
+  'family',
+  query,
+)
 
 useSeoMeta({ title: 'Familie' })
 </script>
@@ -26,12 +29,14 @@ useSeoMeta({ title: 'Familie' })
     />
 
     <RecipeGrid
-      :recipes="data ?? []"
+      :recipes="recipes"
       :pending="isPending"
       :error="error"
+      :has-more="hasNextPage"
       show-author
       empty-title="Nog niets van de familie"
       empty-description="Zodra iemand anders een recept bewaart, zie je het hier."
+      @load-more="loadMore"
     />
   </div>
 </template>

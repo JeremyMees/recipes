@@ -7,6 +7,7 @@ const props = withDefaults(
     pending?: boolean
     error: Error | null
     showAuthor?: boolean
+    hasMore?: boolean
     emptyTitle?: string
     emptyDescription?: string
   }>(),
@@ -14,9 +15,22 @@ const props = withDefaults(
     recipes: () => [],
     pending: false,
     showAuthor: false,
+    hasMore: false,
     emptyTitle: 'Nog geen recepten',
     emptyDescription: 'Voeg je eerste recept toe met een link.',
   },
+)
+
+const emit = defineEmits<{ loadMore: [] }>()
+
+const sentinel = useTemplateRef<HTMLElement>('sentinel')
+
+useIntersectionObserver(
+  sentinel,
+  entries => {
+    if (entries.some(entry => entry.isIntersecting)) emit('loadMore')
+  },
+  { rootMargin: '600px 0px' },
 )
 </script>
 
@@ -52,13 +66,28 @@ const props = withDefaults(
     data-test-id="recipe-grid-empty"
   />
 
-  <UPageGrid v-else data-test-id="recipe-grid">
-    <RecipeCard
-      v-for="(recipe, i) in props.recipes"
-      :key="recipe.id"
-      :index="i"
-      :recipe="recipe"
-      :show-author="props.showAuthor"
-    />
-  </UPageGrid>
+  <div v-else class="flex flex-col gap-6">
+    <UPageGrid data-test-id="recipe-grid">
+      <RecipeCard
+        v-for="(recipe, i) in props.recipes"
+        :key="recipe.id"
+        :index="i"
+        :recipe="recipe"
+        :show-author="props.showAuthor"
+      />
+    </UPageGrid>
+
+    <div
+      v-if="props.hasMore"
+      ref="sentinel"
+      data-test-id="recipe-grid-sentinel"
+      class="flex items-center justify-center py-4"
+    >
+      <UIcon
+        name="i-ri-loader-4-line"
+        class="size-6 animate-spin text-dimmed"
+        data-test-id="recipe-grid-loading-more"
+      />
+    </div>
+  </div>
 </template>

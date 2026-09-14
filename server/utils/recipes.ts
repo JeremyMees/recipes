@@ -1,8 +1,13 @@
-import { and, arrayContains, desc, eq, ilike, ne, or } from 'drizzle-orm'
+import { and, arrayContains, desc, eq, ilike, lt, ne, or } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import { recipes, users } from '../database/schema'
 import type { RecipeRow } from '../database/schema'
-import type { RecipeDetail, RecipeListItem } from '../../shared/types/recipe'
+import type {
+  RecipeDetail,
+  RecipeListItem,
+  RecipeListPage,
+} from '../../shared/types/recipe'
+import { RECIPE_PAGE_SIZE } from '../../shared/schemas/recipe'
 import type { RecipeInput, RecipeQuery } from '../../shared/schemas/recipe'
 
 const listColumns = {
@@ -20,6 +25,19 @@ const listColumns = {
   authorName: users.name,
 }
 
+function parseCursor(cursor: string): { createdAt: Date; id: string } | null {
+  const separator = cursor.lastIndexOf('_')
+
+  if (separator < 1) return null
+
+  const createdAt = new Date(cursor.slice(0, separator))
+  const id = cursor.slice(separator + 1)
+
+  if (!id || Number.isNaN(createdAt.getTime())) return null
+
+  return { createdAt, id }
+}
+
 function filters(query: RecipeQuery): SQL[] {
   const conditions: SQL[] = []
 
@@ -33,6 +51,17 @@ function filters(query: RecipeQuery): SQL[] {
 
   if (query.tag) {
     conditions.push(arrayContains(recipes.tags, [query.tag.toLowerCase()]))
+  }
+
+  const cursor = query.cursor ? parseCursor(query.cursor) : null
+
+  if (cursor) {
+    conditions.push(
+      or(
+        lt(recipes.createdAt, cursor.createdAt),
+        and(eq(recipes.createdAt, cursor.createdAt), lt(recipes.id, cursor.id)),
+      )!,
+    )
   }
 
   return conditions
@@ -62,32 +91,39 @@ function toListItem(row: ListRow): RecipeListItem {
   }
 }
 
-export async function listOwnRecipes(
-  userId: string,
-  query: RecipeQuery,
-): Promise<RecipeListItem[]> {
-  const rows = await useDb()
+async function listPage(scope: SQL, query: RecipeQuery) {
+  const rows = (await useDb()
     .select(listColumns)
     .from(recipes)
     .innerJoin(users, eq(users.id, recipes.userId))
-    .where(and(eq(recipes.userId, userId), ...filters(query)))
-    .orderBy(desc(recipes.createdAt))
+    .where(and(scope, ...filters(query)))
+    .orderBy(desc(recipes.createdAt), desc(recipes.id))
+    .limit(RECIPE_PAGE_SIZE + 1)) as ListRow[]
 
-  return rows.map(toListItem)
+  const page = rows.slice(0, RECIPE_PAGE_SIZE)
+  const last = page.at(-1)
+
+  return {
+    items: page.map(toListItem),
+    nextCursor:
+      rows.length > RECIPE_PAGE_SIZE && last
+        ? `${last.createdAt.toISOString()}_${last.id}`
+        : null,
+  }
+}
+
+export async function listOwnRecipes(
+  userId: string,
+  query: RecipeQuery,
+): Promise<RecipeListPage> {
+  return listPage(eq(recipes.userId, userId), query)
 }
 
 export async function listFamilyRecipes(
   userId: string,
   query: RecipeQuery,
-): Promise<RecipeListItem[]> {
-  const rows = await useDb()
-    .select(listColumns)
-    .from(recipes)
-    .innerJoin(users, eq(users.id, recipes.userId))
-    .where(and(ne(recipes.userId, userId), ...filters(query)))
-    .orderBy(desc(recipes.createdAt))
-
-  return rows.map(toListItem)
+): Promise<RecipeListPage> {
+  return listPage(ne(recipes.userId, userId), query)
 }
 
 export async function findRecipeForUser(

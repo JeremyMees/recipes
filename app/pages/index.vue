@@ -9,7 +9,10 @@ const query = computed(() => ({
   ...(tag.value ? { tag: tag.value } : {}),
 }))
 
-const { data, isPending, error } = useRecipesQuery('own', query)
+const { recipes, isPending, error, hasNextPage, loadMore } = useRecipesQuery(
+  'own',
+  query,
+)
 const { data: tags } = useRecipeTagsQuery()
 
 useSeoMeta({ title: 'Mijn recepten' })
@@ -60,11 +63,13 @@ useSeoMeta({ title: 'Mijn recepten' })
     </div>
 
     <RecipeGrid
-      :recipes="data ?? []"
+      :recipes="recipes"
       :pending="isPending"
       :error="error"
+      :has-more="hasNextPage"
       empty-title="Nog geen recepten"
       empty-description="Plak een link van een receptensite om te beginnen."
+      @load-more="loadMore"
     />
   </div>
 </template>

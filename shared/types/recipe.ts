@@ -44,6 +44,11 @@ export interface RecipeListItem {
   authorName: string | null
 }
 
+export interface RecipeListPage {
+  items: RecipeListItem[]
+  nextCursor: string | null
+}
+
 export interface RecipeDetail extends RecipeListItem {
   imageKey: string | null
   sourceUrl: string | null

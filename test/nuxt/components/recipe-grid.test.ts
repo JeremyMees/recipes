@@ -1,8 +1,27 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import RecipeGrid from '~/components/recipe-grid.vue'
 import { listItemById as makeRecipe } from '~~/test/fixtures/recipes'
 import { testId } from '~~/test/unit/stubs/selectors'
+
+const observers: {
+  callback: (entries: { isIntersecting: boolean }[]) => void
+}[] = []
+
+class IntersectionObserverStub {
+  constructor(callback: (entries: { isIntersecting: boolean }[]) => void) {
+    observers.push({ callback })
+  }
+
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return []
+  }
+}
+
+vi.stubGlobal('IntersectionObserver', IntersectionObserverStub)
 
 function mount(props: Record<string, unknown>) {
   return mountSuspended(RecipeGrid, {
@@ -11,6 +30,10 @@ function mount(props: Record<string, unknown>) {
 }
 
 describe('RecipeGrid', () => {
+  beforeEach(() => {
+    observers.length = 0
+  })
+
   it('shows the error state above everything else', async () => {
     const component = await mount({
       error: new Error('boom'),
@@ -59,6 +82,37 @@ describe('RecipeGrid', () => {
     })
 
     expect(component.findAll(testId('recipe-card'))).toHaveLength(2)
+  })
+
+  it('hides the sentinel when there is nothing left to load', async () => {
+    const component = await mount({ recipes: [makeRecipe('r1')] })
+
+    expect(component.find(testId('recipe-grid-sentinel')).exists()).toBe(false)
+  })
+
+  it('asks for the next page as soon as the sentinel comes into view', async () => {
+    const component = await mount({
+      recipes: [makeRecipe('r1')],
+      hasMore: true,
+    })
+
+    expect(component.find(testId('recipe-grid-sentinel')).exists()).toBe(true)
+    expect(component.emitted('loadMore')).toBeUndefined()
+
+    observers.at(-1)!.callback([{ isIntersecting: true }])
+
+    expect(component.emitted('loadMore')).toHaveLength(1)
+  })
+
+  it('stays put while the sentinel is off screen', async () => {
+    const component = await mount({
+      recipes: [makeRecipe('r1')],
+      hasMore: true,
+    })
+
+    observers.at(-1)!.callback([{ isIntersecting: false }])
+
+    expect(component.emitted('loadMore')).toBeUndefined()
   })
 
   it('passes showAuthor through to the cards', async () => {

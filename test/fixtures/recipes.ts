@@ -2,6 +2,7 @@ import type {
   ParsedRecipe,
   RecipeDetail,
   RecipeListItem,
+  RecipeListPage,
 } from '#shared/types/recipe'
 
 export const RECIPE_IMAGE_KEY =
@@ -43,6 +44,13 @@ export function listItemById(
     cookMinutes: null,
     ...overrides,
   })
+}
+
+export function listPage(
+  items: RecipeListItem[] = [listItem()],
+  nextCursor: string | null = null,
+): RecipeListPage {
+  return { items, nextCursor }
 }
 
 export function detail(overrides: Partial<RecipeDetail> = {}): RecipeDetail {

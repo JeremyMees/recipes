@@ -1,9 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/vue-query'
 import type { RecipeInput, RecipeQuery } from '#shared/schemas/recipe'
 import type {
   RecipeDetail,
   RecipeImportResult,
-  RecipeListItem,
+  RecipeListPage,
 } from '#shared/types/recipe'
 
 export type RecipeScope = 'own' | 'family'
@@ -30,20 +35,44 @@ export function useRecipesQuery(
 ) {
   const request = useRequestFetch()
 
-  const result = useQuery({
+  const result = useInfiniteQuery({
     queryKey: computed(() => recipeKeys.list(scope, toValue(query))),
-    queryFn: () =>
-      request<RecipeListItem[]>(
+    queryFn: ({ pageParam }) =>
+      request<RecipeListPage>(
         scope === 'own' ? '/api/recipes' : '/api/recipes/family',
-        { query: toValue(query) },
+        {
+          query: {
+            ...toValue(query),
+            ...(pageParam ? { cursor: pageParam } : {}),
+          },
+        },
       ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: page => page.nextCursor ?? undefined,
     placeholderData: previous => previous,
-    refetchOnMount: 'always',
+    gcTime: 30 * 60_000,
   })
+
+  const recipes = computed(
+    () => result.data.value?.pages.flatMap(page => page.items) ?? [],
+  )
+
+  function loadMore() {
+    if (result.hasNextPage.value && !result.isFetchingNextPage.value) {
+      result.fetchNextPage()
+    }
+  }
 
   prefetchOnServer(result)
 
-  return result
+  return {
+    recipes,
+    loadMore,
+    isPending: result.isPending,
+    error: result.error,
+    hasNextPage: result.hasNextPage,
+    isFetchingNextPage: result.isFetchingNextPage,
+  }
 }
 
 export function useRecipeQuery(id: MaybeRefOrGetter<string>) {
