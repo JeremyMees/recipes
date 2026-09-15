@@ -189,6 +189,7 @@ useSeoMeta({ title: 'Recept toevoegen' })
     <UPageHeader
       title="Recept toevoegen"
       description="Plak een link, plak de tekst van een recept of bijschrift, of vul alles zelf in."
+      :ui="{ title: 'font-logo' }"
     />
 
     <UCard>

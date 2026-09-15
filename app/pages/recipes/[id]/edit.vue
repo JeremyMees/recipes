@@ -91,7 +91,10 @@ useSeoMeta({ title: () => `${recipe.value?.title ?? 'Recept'} aanpassen` })
       />
 
       <template v-else>
-        <UPageHeader :title="`${recipe.title} aanpassen`" />
+        <UPageHeader
+          :title="`${recipe.title} aanpassen`"
+          :ui="{ title: 'font-logo' }"
+        />
 
         <RecipeForm
           :initial="initial"

@@ -20,7 +20,7 @@ useSeoMeta({ title: 'Mijn recepten' })
 
 <template>
   <div class="flex flex-col gap-6">
-    <UPageHeader title="Mijn recepten">
+    <UPageHeader title="Mijn recepten" :ui="{ title: 'font-logo' }">
       <template #links>
         <UButton
           to="/recipes/new"

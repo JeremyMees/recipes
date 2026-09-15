@@ -19,6 +19,7 @@ useSeoMeta({ title: 'Familie' })
     <UPageHeader
       title="Familierecepten"
       description="Alles wat de rest van de familie heeft bewaard."
+      :ui="{ title: 'font-logo' }"
     />
 
     <UInput
