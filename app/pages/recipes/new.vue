@@ -213,6 +213,7 @@ useSeoMeta({ title: 'Recept toevoegen' })
           label="Inlezen"
           color="primary"
           variant="solid"
+          class="justify-center"
           :loading="importRecipe.isPending.value"
           :disabled="!url.trim()"
           data-test-id="import-submit"

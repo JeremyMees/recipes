@@ -39,7 +39,7 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
-      name: 'The Wrap',
+      name: 'Recipe book',
       short_name: 'Wrap',
       description: 'Family recipes app',
       theme_color: '#ffffff',
