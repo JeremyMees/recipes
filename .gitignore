@@ -29,3 +29,6 @@ coverage
 .env.*
 !.env.example
 .neon
+
+# Generated PWA icons
+public/monochrome-512x512.png

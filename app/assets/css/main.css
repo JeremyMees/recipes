@@ -11,6 +11,43 @@
     letter-spacing: -0.01em;
   }
 
+  #splash-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: none;
+    place-items: center;
+    background: var(--ui-bg);
+    color: var(--ui-text-highlighted);
+    animation: splash-out 400ms ease-in-out 4s both;
+  }
+
+  @media (display-mode: standalone) {
+    #splash-screen {
+      display: grid;
+    }
+  }
+
+  #splash-screen[data-ready='true'] {
+    animation-delay: 150ms;
+  }
+
+  @keyframes splash-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #splash-screen {
+      animation-duration: 1ms;
+    }
+  }
+
   ::view-transition-old(root) {
     animation: fade-out 300ms ease-in-out both;
   }

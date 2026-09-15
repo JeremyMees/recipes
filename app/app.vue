@@ -22,7 +22,6 @@ const userMenuItems = computed(() => [
 
 useHead({
   meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
-  link: [{ rel: 'icon', href: '/favicon.ico' }],
   htmlAttrs: {
     lang: 'nl',
   },
@@ -36,7 +35,8 @@ useSeoMeta({
 </script>
 
 <template>
-  <NuxtPwaManifest />
+  <NuxtPwaAssets />
+  <SplashScreen />
 
   <UApp>
     <UHeader>
@@ -45,7 +45,7 @@ useSeoMeta({
           to="/"
           class="focus-visible:outline-3 outline-primary/25 rounded-md p-1 -ms-1"
         >
-          <AppLogo class="w-auto h-6 shrink-0" />
+          <Logo class="w-auto h-6 shrink-0" />
         </NuxtLink>
       </template>
 

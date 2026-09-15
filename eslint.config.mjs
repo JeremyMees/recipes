@@ -6,5 +6,6 @@ export default withNuxt(...pluginQuery.configs['flat/recommended'], {
   files: ['**/*.js', '**/*.ts', '**/*.vue'],
   rules: {
     'vue/html-self-closing': ['warn', { html: { void: 'any' } }],
+    'vue/multi-word-component-names': 'off',
   },
 })

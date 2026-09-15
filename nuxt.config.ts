@@ -1,3 +1,5 @@
+import pwa from './pwa.config'
+
 export default defineNuxtConfig({
   compatibilityDate: '2026-06-30',
 
@@ -36,36 +38,7 @@ export default defineNuxtConfig({
     },
   },
 
-  pwa: {
-    registerType: 'autoUpdate',
-    manifest: {
-      name: 'Recipe book',
-      short_name: 'Wrap',
-      description: 'Family recipes app',
-      theme_color: '#ffffff',
-      background_color: '#ffffff',
-      display: 'standalone',
-      share_target: {
-        action: '/recipes/new',
-        method: 'GET',
-        params: { title: 'title', text: 'text', url: 'url' },
-      },
-      icons: [
-        {
-          src: '/android-chrome-192x192.png',
-          sizes: '192x192',
-          type: 'image/png',
-          purpose: 'maskable',
-        },
-        {
-          src: '/android-chrome-512x512.png',
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'maskable',
-        },
-      ],
-    },
-  },
+  pwa,
 
   sourcemap: {
     client: 'hidden',
