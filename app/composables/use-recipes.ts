@@ -112,6 +112,16 @@ export function useImportRecipe() {
   })
 }
 
+export function useImportRecipeText() {
+  return useMutation({
+    mutationFn: (body: { text: string; sourceUrl?: string | null }) =>
+      $fetch<RecipeImportResult>('/api/recipes/import-text', {
+        method: 'POST',
+        body,
+      }),
+  })
+}
+
 export function useCreateRecipe() {
   const client = useQueryClient()
 

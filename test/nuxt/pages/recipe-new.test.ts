@@ -37,6 +37,13 @@ let importResponse: {
   draft: Record<string, unknown>
 }
 
+let textResponse: {
+  source: RecipeDraftSource
+  draft: Record<string, unknown>
+}
+
+const textBodies: unknown[] = []
+
 const createdBodies: unknown[] = []
 
 registerEndpoint('/api/recipes/import', {
@@ -45,6 +52,15 @@ registerEndpoint('/api/recipes/import', {
     if (importStatus !== 200) throw createError({ statusCode: importStatus })
 
     return importResponse
+  },
+})
+
+registerEndpoint('/api/recipes/import-text', {
+  method: 'POST',
+  handler: async event => {
+    textBodies.push(await readBody(event))
+
+    return textResponse
   },
 })
 
@@ -97,12 +113,13 @@ function emptyDraft(overrides: Record<string, unknown> = {}) {
   }
 }
 
-function mountPage() {
+function mountPage(route = '/recipes/new') {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: 0 } },
   })
 
   return mountSuspended(NewRecipePage, {
+    route,
     global: { plugins: [[VueQueryPlugin, { queryClient }]] },
   })
 }
@@ -124,6 +141,8 @@ describe('add recipe page', () => {
     createStatus = 200
     importStatus = 200
     importResponse = { source: 'jsonld', draft: emptyDraft() }
+    textResponse = { source: 'ai', draft: emptyDraft() }
+    textBodies.length = 0
 
     canvas = createCanvasStub()
 
@@ -399,6 +418,102 @@ describe('add recipe page', () => {
 
     expect(component.find(testId('recipe-form')).exists()).toBe(true)
     expect(createdBodies).toHaveLength(0)
+  })
+
+  it('tells you to paste the caption for an instagram link', async () => {
+    importResponse = {
+      source: 'social',
+      draft: emptyDraft({ sourceUrl: 'https://www.instagram.com/p/abc/' }),
+    }
+
+    const component = await mountPage()
+
+    await importUrl(component, 'https://www.instagram.com/p/abc/')
+
+    await vi.waitFor(() =>
+      expect(component.get(testId('import-message')).text()).toContain(
+        'Instagram en Facebook geven het recept niet vrij',
+      ),
+    )
+
+    expect(component.find(testId('import-text')).exists()).toBe(true)
+  })
+
+  it('builds a recipe from a pasted caption', async () => {
+    textResponse = {
+      source: 'ai',
+      draft: emptyDraft({
+        title: 'Pasta pesto',
+        sourceUrl: null,
+        sourceName: null,
+        ingredients: ['200 g spaghetti'],
+      }),
+    }
+
+    const component = await mountPage(
+      '/recipes/new?text=Pasta%20pesto%20recept',
+    )
+
+    expect(
+      (component.get(testId('import-text')).element as HTMLTextAreaElement)
+        .value,
+    ).toBe('Pasta pesto recept')
+
+    await component.get(testId('import-text-form')).trigger('submit')
+
+    await vi.waitFor(() =>
+      expect(
+        (component.get(testId('recipe-form-title')).element as HTMLInputElement)
+          .value,
+      ).toBe('Pasta pesto'),
+    )
+
+    expect(textBodies[0]).toMatchObject({
+      text: 'Pasta pesto recept',
+      sourceUrl: null,
+    })
+    expect(component.get(testId('import-message')).text()).toContain(
+      'Recept uit tekst gehaald',
+    )
+  })
+
+  it('keeps a shared link as the source of a pasted caption', async () => {
+    const component = await mountPage(
+      '/recipes/new?url=https%3A%2F%2Fwww.instagram.com%2Fp%2Fabc%2F&text=500%20g%20gehakt',
+    )
+
+    await component.get(testId('import-text-form')).trigger('submit')
+
+    await vi.waitFor(() => expect(textBodies).toHaveLength(1))
+
+    expect(textBodies[0]).toMatchObject({
+      text: '500 g gehakt',
+      sourceUrl: 'https://www.instagram.com/p/abc/',
+    })
+  })
+
+  it('puts a shared bare link in the link field', async () => {
+    const component = await mountPage(
+      '/recipes/new?text=https%3A%2F%2Fwww.leukerecepten.nl%2Fr%2F',
+    )
+
+    expect(
+      (component.get(testId('import-url')).element as HTMLInputElement).value,
+    ).toBe('https://www.leukerecepten.nl/r/')
+    expect(component.find(testId('import-text')).exists()).toBe(false)
+  })
+
+  it('leaves the form usable when no recipe is found in the text', async () => {
+    textResponse = { source: 'none', draft: emptyDraft({ sourceUrl: null }) }
+
+    const component = await mountPage('/recipes/new?text=foto%20van%20de%20kat')
+
+    await component.get(testId('import-text-form')).trigger('submit')
+
+    await vi.waitFor(() => expect(textBodies).toHaveLength(1))
+
+    expect(component.find(testId('import-message')).exists()).toBe(false)
+    expect(component.find(testId('recipe-form')).exists()).toBe(true)
   })
 
   it('refuses to save without a title', async () => {

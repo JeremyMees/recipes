@@ -275,6 +275,122 @@ export function parseTags(node: Record<string, unknown>): string[] {
     .slice(0, 12)
 }
 
+const VOID_TAGS = new Set([
+  'meta',
+  'img',
+  'link',
+  'input',
+  'br',
+  'hr',
+  'source',
+  'area',
+  'base',
+  'col',
+  'embed',
+  'param',
+  'track',
+  'wbr',
+])
+
+const LIST_PROPS = new Set([
+  'recipeIngredient',
+  'ingredients',
+  'recipeInstructions',
+  'recipeCategory',
+  'recipeCuisine',
+  'keywords',
+])
+
+const RECIPE_PROPS = new Set([
+  'name',
+  'description',
+  'image',
+  'prepTime',
+  'cookTime',
+  'totalTime',
+  'recipeYield',
+  'author',
+  'publisher',
+  ...LIST_PROPS,
+])
+
+function attributeOf(tag: string, name: string): string | undefined {
+  return tag.match(new RegExp(`\\b${name}\\s*=\\s*["']([^"']*)["']`, 'i'))?.[1]
+}
+
+function innerHtmlFrom(html: string, tag: string, start: number): string {
+  const pattern = new RegExp(`<(/?)${tag}\\b`, 'gi')
+
+  pattern.lastIndex = start
+
+  let depth = 1
+  let match: RegExpExecArray | null
+
+  while ((match = pattern.exec(html))) {
+    depth += match[1] ? -1 : 1
+
+    if (depth === 0) return html.slice(start, match.index)
+  }
+
+  return html.slice(start)
+}
+
+export function resolveUrl(value: string, base: string): string {
+  try {
+    return new URL(value, base).toString()
+  } catch {
+    return value
+  }
+}
+
+export function extractMicrodata(
+  html: string,
+  sourceUrl: string,
+): Record<string, unknown> | undefined {
+  const scope = html.search(/itemtype\s*=\s*["'][^"']*schema\.org\/Recipe["']/i)
+
+  if (scope === -1) return undefined
+
+  const region = html.slice(scope)
+  const collected: Record<string, string[]> = {}
+
+  for (const tag of region.matchAll(/<([a-z][a-z0-9]*)\b([^>]*)>/gi)) {
+    const element = tag[1]!.toLowerCase()
+    const attributes = tag[2] ?? ''
+    const prop = attributeOf(attributes, 'itemprop')
+
+    if (!prop || !RECIPE_PROPS.has(prop)) continue
+
+    const attributeValue =
+      attributeOf(attributes, 'content') ??
+      attributeOf(attributes, 'datetime') ??
+      (prop === 'image'
+        ? (attributeOf(attributes, 'src') ?? attributeOf(attributes, 'href'))
+        : undefined)
+
+    const raw = VOID_TAGS.has(element)
+      ? attributeValue
+      : (attributeValue ??
+        stripHtml(innerHtmlFrom(region, element, tag.index + tag[0].length)))
+
+    const value = raw?.trim()
+
+    if (!value) continue
+
+    ;(collected[prop] ??= []).push(
+      prop === 'image' ? resolveUrl(value, sourceUrl) : value,
+    )
+  }
+
+  const node: Record<string, unknown> = {}
+
+  for (const [prop, values] of Object.entries(collected)) {
+    node[prop] = LIST_PROPS.has(prop) ? values : values[0]
+  }
+
+  return Object.keys(node).length ? node : undefined
+}
+
 export function parseMetaTags(html: string): Record<string, string> {
   const meta: Record<string, string> = {}
 
@@ -297,7 +413,7 @@ export function parsePageTitle(html: string): string {
   return stripHtml(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '')
 }
 
-function hostnameOf(url: string): string | null {
+export function hostnameOf(url: string): string | null {
   try {
     return new URL(url).hostname.replace(/^www\./, '')
   } catch {
@@ -324,13 +440,13 @@ function publisherName(node: Record<string, unknown>): string | null {
   return null
 }
 
-function emptyDraft(sourceUrl: string): ParsedRecipe {
+export function emptyDraft(sourceUrl: string | null): ParsedRecipe {
   return {
     title: '',
     description: null,
     imageUrl: null,
     sourceUrl,
-    sourceName: hostnameOf(sourceUrl),
+    sourceName: sourceUrl ? hostnameOf(sourceUrl) : null,
     servings: null,
     prepMinutes: null,
     cookMinutes: null,
@@ -341,39 +457,47 @@ function emptyDraft(sourceUrl: string): ParsedRecipe {
   }
 }
 
+function nodeToDraft(
+  node: Record<string, unknown>,
+  draft: ParsedRecipe,
+): ParsedRecipe | undefined {
+  const title = stripHtml(node.name)
+  const ingredients = parseIngredients(
+    node.recipeIngredient ?? node.ingredients,
+  )
+  const instructions = parseInstructions(node.recipeInstructions)
+
+  if (!title && !ingredients.length && !instructions.length) return undefined
+
+  return {
+    ...draft,
+    title,
+    description: stripHtml(node.description) || null,
+    imageUrl: parseImage(node.image),
+    sourceName: publisherName(node) ?? draft.sourceName,
+    servings: parseServings(node.recipeYield),
+    prepMinutes: parseDuration(node.prepTime),
+    cookMinutes: parseDuration(node.cookTime ?? node.totalTime),
+    ingredients,
+    instructions,
+    tags: parseTags(node),
+  }
+}
+
 export function htmlToRecipeDraft(
   html: string,
   sourceUrl: string,
 ): ParsedRecipeResult {
-  const draft = emptyDraft(sourceUrl)
-  const node = findRecipeNode(extractJsonLd(html))
+  const blank = emptyDraft(sourceUrl)
+  const jsonLd = findRecipeNode(extractJsonLd(html))
+  const fromJsonLd = jsonLd && nodeToDraft(jsonLd, blank)
 
-  if (node) {
-    const title = stripHtml(node.name)
-    const ingredients = parseIngredients(
-      node.recipeIngredient ?? node.ingredients,
-    )
-    const instructions = parseInstructions(node.recipeInstructions)
+  if (fromJsonLd) return { source: 'jsonld', draft: fromJsonLd }
 
-    if (title || ingredients.length || instructions.length) {
-      return {
-        source: 'jsonld',
-        draft: {
-          ...draft,
-          title,
-          description: stripHtml(node.description) || null,
-          imageUrl: parseImage(node.image),
-          sourceName: publisherName(node) ?? draft.sourceName,
-          servings: parseServings(node.recipeYield),
-          prepMinutes: parseDuration(node.prepTime),
-          cookMinutes: parseDuration(node.cookTime ?? node.totalTime),
-          ingredients,
-          instructions,
-          tags: parseTags(node),
-        },
-      }
-    }
-  }
+  const microdata = extractMicrodata(html, sourceUrl)
+  const fromMicrodata = microdata && nodeToDraft(microdata, blank)
+
+  if (fromMicrodata) return { source: 'microdata', draft: fromMicrodata }
 
   const meta = parseMetaTags(html)
   const title = meta['og:title'] ?? parsePageTitle(html)
@@ -382,14 +506,14 @@ export function htmlToRecipeDraft(
     return {
       source: 'opengraph',
       draft: {
-        ...draft,
+        ...blank,
         title,
         description: meta['og:description'] ?? null,
         imageUrl: parseImage(meta['og:image']),
-        sourceName: meta['og:site_name'] ?? draft.sourceName,
+        sourceName: meta['og:site_name'] ?? blank.sourceName,
       },
     }
   }
 
-  return { source: 'none', draft }
+  return { source: 'none', draft: blank }
 }

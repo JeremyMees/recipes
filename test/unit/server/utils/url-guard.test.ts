@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isFetchableUrl } from '~~/server/utils/url-guard'
+import { isFetchableUrl, isSocialUrl } from '~~/server/utils/url-guard'
 
 describe('isFetchableUrl', () => {
   it('allows public http and https hosts', () => {
@@ -27,5 +27,29 @@ describe('isFetchableUrl', () => {
     expect(isFetchableUrl('file:///etc/passwd')).toBe(false)
     expect(isFetchableUrl('javascript:alert(1)')).toBe(false)
     expect(isFetchableUrl('geen url')).toBe(false)
+  })
+})
+
+describe('isSocialUrl', () => {
+  it('recognises instagram, facebook and tiktok links', () => {
+    const social = [
+      'https://www.instagram.com/p/Cabc123/',
+      'https://instagram.com/reel/Cabc123/',
+      'https://www.facebook.com/share/p/abc/',
+      'https://m.facebook.com/story.php?id=1',
+      'https://fb.watch/abc/',
+      'https://www.tiktok.com/@chef/video/123',
+    ]
+
+    for (const url of social) {
+      expect(isSocialUrl(url), url).toBe(true)
+    }
+  })
+
+  it('leaves recipe sites and lookalike hosts alone', () => {
+    expect(isSocialUrl('https://www.leukerecepten.nl/x')).toBe(false)
+    expect(isSocialUrl('https://notinstagram.com/p/x')).toBe(false)
+    expect(isSocialUrl('https://instagram.com.evil.test/p/x')).toBe(false)
+    expect(isSocialUrl('geen url')).toBe(false)
   })
 })

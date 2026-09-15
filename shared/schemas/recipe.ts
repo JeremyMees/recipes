@@ -63,6 +63,13 @@ export const recipeImportSchema = z.object({
   url: z.url({ protocol: /^https?$/ }).max(2000),
 })
 
+export const RECIPE_TEXT_MAX = 20_000
+
+export const recipeTextImportSchema = z.object({
+  text: z.string().trim().min(1, 'Plak eerst wat tekst').max(RECIPE_TEXT_MAX),
+  sourceUrl: nullableUrl().optional(),
+})
+
 export const RECIPE_PAGE_SIZE = 12
 
 export const recipeQuerySchema = z.object({

@@ -25,6 +25,8 @@ export default defineNuxtConfig({
     databaseUrl: process.env.DATABASE_URL ?? '',
     s3Endpoint: process.env.AWS_ENDPOINT_URL_S3 ?? '',
     familyEmails: '',
+    anthropicApiKey: '',
+    anthropicModel: '',
     session: {
       password: process.env.NUXT_SESSION_PASSWORD ?? '',
       maxAge: 60 * 60 * 24 * 30,
@@ -43,6 +45,11 @@ export default defineNuxtConfig({
       theme_color: '#ffffff',
       background_color: '#ffffff',
       display: 'standalone',
+      share_target: {
+        action: '/recipes/new',
+        method: 'GET',
+        params: { title: 'title', text: 'text', url: 'url' },
+      },
       icons: [
         {
           src: '/android-chrome-192x192.png',

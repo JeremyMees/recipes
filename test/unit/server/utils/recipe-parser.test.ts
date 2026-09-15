@@ -3,6 +3,7 @@ import { fixture } from '~~/test/fixtures/load'
 import {
   decodeEntities,
   extractJsonLd,
+  extractMicrodata,
   findRecipeNode,
   htmlToRecipeDraft,
   parseDuration,
@@ -296,5 +297,89 @@ describe('htmlToRecipeDraft', () => {
     expect(draft.title).toBe('')
     expect(draft.sourceUrl).toBe('https://www.allrecipes.com/recipe/158140/')
     expect(draft.sourceName).toBe('allrecipes.com')
+  })
+})
+
+const MICRODATA = `
+<html><body>
+  <nav><a href="/">Home</a></nav>
+  <article itemscope itemtype="https://schema.org/Recipe">
+    <h1 itemprop="name">Stoofvlees met bier</h1>
+    <p itemprop="description">Klassieker uit de Vlaamse keuken.</p>
+    <img itemprop="image" src="/media/stoofvlees.jpg">
+    <span itemprop="author">Oma</span>
+    <meta itemprop="recipeYield" content="6 personen">
+    <time itemprop="prepTime" datetime="PT20M">20 minuten</time>
+    <time itemprop="cookTime" datetime="PT2H30M">2,5 uur</time>
+    <ul>
+      <li itemprop="recipeIngredient">1 kg stoofvlees</li>
+      <li itemprop="recipeIngredient">2 uien, <b>grof</b> gesnipperd</li>
+      <li itemprop="recipeIngredient">33 cl bruin bier</li>
+    </ul>
+    <ol>
+      <li itemprop="recipeInstructions">Bak het vlees rondom bruin.</li>
+      <li itemprop="recipeInstructions">Voeg de uien toe.</li>
+    </ol>
+    <meta itemprop="recipeCategory" content="hoofdgerecht">
+    <meta itemprop="keywords" content="belgisch, winter">
+  </article>
+</body></html>`
+
+describe('extractMicrodata', () => {
+  it('collects recipe properties from itemprop markup', () => {
+    const node = extractMicrodata(MICRODATA, 'https://oma.test/stoofvlees')!
+
+    expect(node.name).toBe('Stoofvlees met bier')
+    expect(node.recipeIngredient).toHaveLength(3)
+    expect(node.prepTime).toBe('PT20M')
+    expect(node.image).toBe('https://oma.test/media/stoofvlees.jpg')
+  })
+
+  it('returns undefined when the page has no recipe itemscope', () => {
+    expect(
+      extractMicrodata('<html><body>niets</body></html>', 'https://a.test/x'),
+    ).toBeUndefined()
+  })
+})
+
+describe('htmlToRecipeDraft with microdata', () => {
+  it('falls back to microdata when there is no json-ld', () => {
+    const { source, draft } = htmlToRecipeDraft(
+      MICRODATA,
+      'https://oma.test/stoofvlees',
+    )
+
+    expect(source).toBe('microdata')
+    expect(draft.title).toBe('Stoofvlees met bier')
+    expect(draft.sourceName).toBe('Oma')
+    expect(draft.servings).toBe(6)
+    expect(draft.prepMinutes).toBe(20)
+    expect(draft.cookMinutes).toBe(150)
+    expect(draft.ingredients).toEqual([
+      '1 kg stoofvlees',
+      '2 uien, grof gesnipperd',
+      '33 cl bruin bier',
+    ])
+    expect(draft.instructions).toEqual([
+      'Bak het vlees rondom bruin.',
+      'Voeg de uien toe.',
+    ])
+    expect(draft.tags).toEqual(['hoofdgerecht', 'belgisch', 'winter'])
+    expect(draft.imageUrl).toBe('https://oma.test/media/stoofvlees.jpg')
+  })
+
+  it('prefers json-ld over microdata when both are present', () => {
+    const jsonLd = `<script type="application/ld+json">${JSON.stringify({
+      '@type': 'Recipe',
+      name: 'Uit json-ld',
+      recipeIngredient: ['water'],
+    })}</script>`
+
+    expect(
+      htmlToRecipeDraft(jsonLd + MICRODATA, 'https://oma.test/x'),
+    ).toMatchObject({
+      source: 'jsonld',
+      draft: { title: 'Uit json-ld' },
+    })
   })
 })

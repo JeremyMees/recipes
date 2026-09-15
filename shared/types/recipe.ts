@@ -13,7 +13,14 @@ export interface ParsedRecipe {
   notes: string | null
 }
 
-export type RecipeDraftSource = 'jsonld' | 'opengraph' | 'none' | 'unreachable'
+export type RecipeDraftSource =
+  | 'jsonld'
+  | 'microdata'
+  | 'opengraph'
+  | 'ai'
+  | 'social'
+  | 'none'
+  | 'unreachable'
 
 export interface ParsedRecipeResult {
   draft: ParsedRecipe

@@ -1,28 +1,8 @@
 import { recipeImportSchema } from '../../../shared/schemas/recipe'
-import type {
-  ParsedRecipe,
-  RecipeDraft,
-  RecipeImportResult,
-} from '../../../shared/types/recipe'
+import type { RecipeImportResult } from '../../../shared/types/recipe'
 
-async function toDraft(parsed: ParsedRecipe): Promise<RecipeDraft> {
-  const { imageUrl, ...rest } = parsed
-
-  const blank = { ...rest, imageKey: null, imageUrl: null }
-
-  if (!imageUrl) return blank
-
-  const image = await fetchRemoteImage(imageUrl)
-
-  if (!image) return blank
-
-  try {
-    const key = await putRecipeImage(image.body, image.contentType)
-
-    return { ...rest, imageKey: key, imageUrl: recipeImageUrl(key) }
-  } catch {
-    return blank
-  }
+function pageText(html: string): string {
+  return stripHtml(html.match(/<body[^>]*>([\s\S]*)<\/body>/i)?.[1] ?? html)
 }
 
 export default defineEventHandler(
@@ -31,17 +11,34 @@ export default defineEventHandler(
 
     const { url } = await readValidatedBody(event, recipeImportSchema.parse)
 
+    if (isSocialUrl(url)) {
+      return { source: 'social', draft: await toRecipeDraft(emptyDraft(url)) }
+    }
+
     const html = await fetchPageHtml(url)
 
     if (!html) {
       return {
         source: 'unreachable',
-        draft: await toDraft(htmlToRecipeDraft('', url).draft),
+        draft: await toRecipeDraft(emptyDraft(url)),
       }
     }
 
     const { draft, source } = htmlToRecipeDraft(html, url)
 
-    return { source, draft: await toDraft(draft) }
+    if (draft.ingredients.length) {
+      return { source, draft: await toRecipeDraft(draft) }
+    }
+
+    const rescued = await textToRecipeDraft(pageText(html), url)
+
+    if (rescued) {
+      return {
+        source: 'ai',
+        draft: await toRecipeDraft({ ...rescued, imageUrl: draft.imageUrl }),
+      }
+    }
+
+    return { source, draft: await toRecipeDraft(draft) }
   },
 )

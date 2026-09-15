@@ -50,3 +50,23 @@ export function endlessStream(chunk: string) {
 
   return { body, counter }
 }
+
+export function respondInOrder(responses: (Response | Error)[]) {
+  const calls: { url: string; headers: Record<string, string> }[] = []
+  let index = 0
+
+  vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+    calls.push({
+      url: String(url),
+      headers: (init?.headers ?? {}) as Record<string, string>,
+    })
+
+    const response = responses[Math.min(index++, responses.length - 1)]
+
+    if (response instanceof Error) throw response
+
+    return response
+  })
+
+  return calls
+}

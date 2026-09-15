@@ -12,3 +12,14 @@ export function isFetchableUrl(url: string): boolean {
     return false
   }
 }
+
+const SOCIAL_HOSTNAMES =
+  /(^|\.)(instagram\.com|facebook\.com|fb\.com|fb\.watch|tiktok\.com)$/i
+
+export function isSocialUrl(url: string): boolean {
+  try {
+    return SOCIAL_HOSTNAMES.test(new URL(url).hostname)
+  } catch {
+    return false
+  }
+}
